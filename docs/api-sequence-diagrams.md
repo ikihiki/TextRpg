@@ -1,6 +1,8 @@
-# API シーケンスダイアグラム
+# API シーケンスダイアグラム / API Sequence Diagrams
 
 本ドキュメントでは、TextRPG プラットフォームの gRPC API 呼び出しの関係性をシーケンスダイアグラムで示します。
+
+This document illustrates the gRPC API call relationships for the TextRPG platform using sequence diagrams.
 
 ## 目次
 
@@ -219,19 +221,26 @@ sequenceDiagram
     BFF-->>Frontend: GetIllustrationsResponse
 ```
 
-### ジョブ状態遷移
+### ジョブ状態遷移 / Job State Transitions
 
 ```
 JOB_STATUS_QUEUED
        │
        ▼
-JOB_STATUS_PROCESSING ◄── JOB_STATUS_WAITING_LOCAL
-       │                        (ローカルGW待ち)
+JOB_STATUS_PROCESSING ───► JOB_STATUS_WAITING_LOCAL
+       │                        (ローカルGW待ち / Waiting for Local GW)
+       │                              │
+       │                              ▼
+       │                    (ローカルGW接続後 / After Local GW connects)
+       │                              │
+       │◄─────────────────────────────┘
        │
        ├──────────────┬──────────────┐
        ▼              ▼              ▼
 JOB_STATUS_COMPLETED  JOB_STATUS_FAILED  JOB_STATUS_CANCELLED
 ```
+
+Note: Jobs transition from PROCESSING to WAITING_LOCAL when they require local gateway execution but the gateway is not connected. Once the gateway connects and completes the work, the job returns to PROCESSING state briefly before completing.
 
 ---
 
