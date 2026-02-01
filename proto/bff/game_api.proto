@@ -1,0 +1,693 @@
+// Copyright 2024 TextRpg Project
+// BFF Game API Service - Public-facing API for web frontend
+//
+// This service provides the public-facing gRPC-Web API for the TextRPG platform.
+// It serves as the BFF (Backend for Frontend) layer, handling web client requests
+// and coordinating with internal services.
+
+syntax = "proto3";
+
+package textrpg.bff;
+
+option csharp_namespace = "TextRpg.Bff.Protos";
+
+import "google/protobuf/timestamp.proto";
+
+// GameApiService provides the public-facing API for web clients.
+// This service is exposed via gRPC-Web for browser compatibility.
+service GameApiService {
+  // Starts a new game with the specified story.
+  rpc StartGame(StartGameRequest) returns (StartGameResponse);
+
+  // Loads an existing game session.
+  rpc LoadGame(LoadGameRequest) returns (LoadGameResponse);
+
+  // Submits a player action and receives the game response.
+  rpc SubmitAction(SubmitActionRequest) returns (SubmitActionResponse);
+
+  // Gets the current game state.
+  rpc GetGameState(GetGameStateRequest) returns (GetGameStateResponse);
+
+  // Lists available stories to play.
+  rpc ListStories(ListStoriesRequest) returns (ListStoriesResponse);
+
+  // Gets details about a specific story.
+  rpc GetStory(GetStoryRequest) returns (GetStoryResponse);
+
+  // Lists the user's game sessions.
+  rpc ListGameSessions(ListGameSessionsRequest) returns (ListGameSessionsResponse);
+
+  // Saves the current game state.
+  rpc SaveGame(SaveGameRequest) returns (SaveGameResponse);
+
+  // Gets the game history (past turns).
+  rpc GetGameHistory(GetGameHistoryRequest) returns (GetGameHistoryResponse);
+
+  // Gets canonical notes for the current session.
+  rpc GetNotes(GetNotesRequest) returns (GetNotesResponse);
+
+  // Updates a canonical note.
+  rpc UpdateNote(UpdateNoteRequest) returns (UpdateNoteResponse);
+
+  // Accepts or rejects an AI-proposed note.
+  rpc ResolveNoteProposal(ResolveNoteProposalRequest) returns (ResolveNoteProposalResponse);
+
+  // Gets illustrations for the current session.
+  rpc GetIllustrations(GetIllustrationsRequest) returns (GetIllustrationsResponse);
+
+  // Requests an illustration generation.
+  rpc RequestIllustration(RequestIllustrationRequest) returns (RequestIllustrationResponse);
+
+  // Ends and archives a game session.
+  rpc EndGame(EndGameRequest) returns (EndGameResponse);
+}
+
+// Request to start a new game.
+message StartGameRequest {
+  // Story to play.
+  string story_id = 1;
+  // Player character configuration.
+  CharacterConfig character = 2;
+  // Game configuration options.
+  GameConfig config = 3;
+}
+
+// Response with the new game session.
+message StartGameResponse {
+  // The newly created game session.
+  GameSession session = 1;
+  // Opening narrative text.
+  string opening_narrative = 2;
+  // Initial action suggestions.
+  repeated ActionOption suggested_actions = 3;
+}
+
+// Request to load an existing game.
+message LoadGameRequest {
+  // Session ID to load.
+  string session_id = 1;
+}
+
+// Response with the loaded game.
+message LoadGameResponse {
+  // The loaded game session.
+  GameSession session = 1;
+  // Current narrative context.
+  string current_narrative = 2;
+  // Available action suggestions.
+  repeated ActionOption suggested_actions = 3;
+}
+
+// Request to submit a player action.
+message SubmitActionRequest {
+  // Session ID.
+  string session_id = 1;
+  // The action to perform.
+  PlayerActionInput action = 2;
+}
+
+// Response with the action result.
+message SubmitActionResponse {
+  // Narrative response to the action.
+  string narrative = 1;
+  // Updated game state.
+  GameStateSnapshot state = 2;
+  // Mechanical results (dice rolls, damage, etc.).
+  repeated GameMechanicResult mechanics = 3;
+  // Suggested next actions.
+  repeated ActionOption suggested_actions = 4;
+  // Whether an illustration was generated.
+  bool illustration_generated = 5;
+  // ID of the generated illustration if any.
+  string illustration_id = 6;
+  // Any proposed notes from AI.
+  repeated NoteProposalSummary note_proposals = 7;
+}
+
+// Request to get current game state.
+message GetGameStateRequest {
+  // Session ID.
+  string session_id = 1;
+}
+
+// Response with game state.
+message GetGameStateResponse {
+  // Current game state.
+  GameStateSnapshot state = 1;
+}
+
+// Request to list available stories.
+message ListStoriesRequest {
+  // Optional genre filter.
+  string genre = 1;
+  // Maximum number of stories to return.
+  int32 page_size = 2;
+  // Pagination token.
+  string page_token = 3;
+}
+
+// Response with list of stories.
+message ListStoriesResponse {
+  // List of available stories.
+  repeated StorySummary stories = 1;
+  // Token for next page.
+  string next_page_token = 2;
+}
+
+// Request to get story details.
+message GetStoryRequest {
+  // Story ID.
+  string story_id = 1;
+}
+
+// Response with story details.
+message GetStoryResponse {
+  // Story details.
+  StoryDetails story = 1;
+}
+
+// Request to list user's game sessions.
+message ListGameSessionsRequest {
+  // Maximum number of sessions to return.
+  int32 page_size = 1;
+  // Pagination token.
+  string page_token = 2;
+  // Optional status filter.
+  GameSessionStatus status_filter = 3;
+}
+
+// Response with list of sessions.
+message ListGameSessionsResponse {
+  // List of game sessions.
+  repeated GameSessionSummary sessions = 1;
+  // Token for next page.
+  string next_page_token = 2;
+}
+
+// Request to save the game.
+message SaveGameRequest {
+  // Session ID.
+  string session_id = 1;
+  // Optional save name.
+  string save_name = 2;
+}
+
+// Response confirming the save.
+message SaveGameResponse {
+  // Whether the save was successful.
+  bool success = 1;
+  // Save timestamp.
+  google.protobuf.Timestamp saved_at = 2;
+}
+
+// Request to get game history.
+message GetGameHistoryRequest {
+  // Session ID.
+  string session_id = 1;
+  // Maximum number of turns to return.
+  int32 page_size = 2;
+  // Pagination token.
+  string page_token = 3;
+}
+
+// Response with game history.
+message GetGameHistoryResponse {
+  // List of past turns.
+  repeated TurnSummary turns = 1;
+  // Token for next page.
+  string next_page_token = 2;
+}
+
+// Request to get notes.
+message GetNotesRequest {
+  // Session ID.
+  string session_id = 1;
+  // Optional category filter.
+  string category = 2;
+  // Maximum number of notes to return.
+  int32 page_size = 3;
+  // Pagination token.
+  string page_token = 4;
+}
+
+// Response with notes.
+message GetNotesResponse {
+  // List of canonical notes.
+  repeated NoteSummary notes = 1;
+  // List of pending proposals.
+  repeated NoteProposalSummary proposals = 2;
+  // Token for next page.
+  string next_page_token = 3;
+}
+
+// Request to update a note.
+message UpdateNoteRequest {
+  // Session ID.
+  string session_id = 1;
+  // Note ID to update.
+  string note_id = 2;
+  // Updated content.
+  NoteUpdate update = 3;
+}
+
+// Response with updated note.
+message UpdateNoteResponse {
+  // The updated note.
+  NoteSummary note = 1;
+}
+
+// Request to resolve a note proposal.
+message ResolveNoteProposalRequest {
+  // Session ID.
+  string session_id = 1;
+  // Proposal ID.
+  string proposal_id = 2;
+  // Whether to accept the proposal.
+  bool accept = 3;
+  // Optional modification if accepting with changes.
+  NoteUpdate modification = 4;
+}
+
+// Response confirming the resolution.
+message ResolveNoteProposalResponse {
+  // Whether the resolution was successful.
+  bool success = 1;
+  // The resulting note if accepted.
+  NoteSummary note = 2;
+}
+
+// Request to get illustrations.
+message GetIllustrationsRequest {
+  // Session ID.
+  string session_id = 1;
+  // Maximum number of illustrations to return.
+  int32 page_size = 2;
+  // Pagination token.
+  string page_token = 3;
+}
+
+// Response with illustrations.
+message GetIllustrationsResponse {
+  // List of illustrations.
+  repeated IllustrationSummary illustrations = 1;
+  // Token for next page.
+  string next_page_token = 2;
+}
+
+// Request to generate an illustration.
+message RequestIllustrationRequest {
+  // Session ID.
+  string session_id = 1;
+  // Optional scene description override.
+  string scene_description = 2;
+  // Priority level.
+  IllustrationPriority priority = 3;
+}
+
+// Response for illustration request.
+message RequestIllustrationResponse {
+  // Whether the request was accepted.
+  bool accepted = 1;
+  // Job ID for tracking.
+  string job_id = 2;
+  // Estimated wait time in seconds.
+  int32 estimated_wait_seconds = 3;
+}
+
+// Request to end a game.
+message EndGameRequest {
+  // Session ID.
+  string session_id = 1;
+  // Ending type.
+  GameEndingType ending_type = 2;
+}
+
+// Response confirming the game end.
+message EndGameResponse {
+  // Whether the ending was successful.
+  bool success = 1;
+  // Final summary of the adventure.
+  string summary = 2;
+}
+
+// Character configuration for new game.
+message CharacterConfig {
+  // Character name.
+  string name = 1;
+  // Character class or archetype.
+  string character_class = 2;
+  // Background story.
+  string background = 3;
+  // Additional character traits.
+  repeated string traits = 4;
+  // Visual description for illustrations.
+  string appearance = 5;
+}
+
+// Game configuration options.
+message GameConfig {
+  // Difficulty level.
+  DifficultyLevel difficulty = 1;
+  // Enable automatic illustrations.
+  bool auto_illustrations = 2;
+  // Turn interval for illustrations.
+  int32 illustration_interval = 3;
+  // AI provider preference.
+  AIProvider ai_provider = 4;
+  // Enable mature content.
+  bool mature_content = 5;
+}
+
+// Difficulty levels.
+enum DifficultyLevel {
+  // Default difficulty.
+  DIFFICULTY_LEVEL_UNSPECIFIED = 0;
+  // Easy mode.
+  DIFFICULTY_LEVEL_EASY = 1;
+  // Normal mode.
+  DIFFICULTY_LEVEL_NORMAL = 2;
+  // Hard mode.
+  DIFFICULTY_LEVEL_HARD = 3;
+}
+
+// AI provider options.
+enum AIProvider {
+  // System default.
+  AI_PROVIDER_UNSPECIFIED = 0;
+  // Cloud AI services.
+  AI_PROVIDER_CLOUD = 1;
+  // Local AI on user's machine.
+  AI_PROVIDER_LOCAL = 2;
+  // Any available.
+  AI_PROVIDER_ANY = 3;
+}
+
+// Game session data.
+message GameSession {
+  // Session ID.
+  string id = 1;
+  // Story being played.
+  string story_id = 2;
+  // Story title.
+  string story_title = 3;
+  // Current game state.
+  GameStateSnapshot state = 4;
+  // Session status.
+  GameSessionStatus status = 5;
+  // When the session was created.
+  google.protobuf.Timestamp created_at = 6;
+  // When the session was last played.
+  google.protobuf.Timestamp last_played_at = 7;
+}
+
+// Game session status.
+enum GameSessionStatus {
+  // Unspecified status.
+  GAME_SESSION_STATUS_UNSPECIFIED = 0;
+  // Currently active.
+  GAME_SESSION_STATUS_ACTIVE = 1;
+  // Paused.
+  GAME_SESSION_STATUS_PAUSED = 2;
+  // Completed.
+  GAME_SESSION_STATUS_COMPLETED = 3;
+  // Archived.
+  GAME_SESSION_STATUS_ARCHIVED = 4;
+}
+
+// Brief session summary for listing.
+message GameSessionSummary {
+  // Session ID.
+  string id = 1;
+  // Story title.
+  string story_title = 2;
+  // Character name.
+  string character_name = 3;
+  // Current turn number.
+  int32 turn_number = 4;
+  // Session status.
+  GameSessionStatus status = 5;
+  // Last played timestamp.
+  google.protobuf.Timestamp last_played_at = 6;
+  // Thumbnail illustration ID if any.
+  string thumbnail_id = 7;
+}
+
+// Snapshot of current game state for client.
+message GameStateSnapshot {
+  // Current turn number.
+  int32 turn_number = 1;
+  // Player character summary.
+  CharacterSummary player = 2;
+  // Current location.
+  LocationSummary location = 3;
+  // Active quests.
+  repeated QuestSummary active_quests = 4;
+  // Important items in inventory.
+  repeated string notable_items = 5;
+  // NPCs in current scene.
+  repeated NPCSummary scene_npcs = 6;
+}
+
+// Brief character summary.
+message CharacterSummary {
+  // Character name.
+  string name = 1;
+  // Character class.
+  string character_class = 2;
+  // Current level.
+  int32 level = 3;
+  // Current HP.
+  int32 current_hp = 4;
+  // Maximum HP.
+  int32 max_hp = 5;
+  // Experience points.
+  int32 experience = 6;
+}
+
+// Brief location summary.
+message LocationSummary {
+  // Location name.
+  string name = 1;
+  // Brief description.
+  string description = 2;
+}
+
+// Brief quest summary.
+message QuestSummary {
+  // Quest title.
+  string title = 1;
+  // Brief description.
+  string description = 2;
+  // Completion percentage.
+  int32 progress_percent = 3;
+}
+
+// Brief NPC summary.
+message NPCSummary {
+  // NPC name.
+  string name = 1;
+  // Brief description.
+  string description = 2;
+  // Disposition indicator.
+  string disposition = 3;
+}
+
+// Player action input from client.
+message PlayerActionInput {
+  // Type of action.
+  ActionInputType type = 1;
+  // Free-text description.
+  string text = 2;
+  // Target identifier if applicable.
+  string target_id = 3;
+  // Selected option index if choosing from suggestions.
+  int32 selected_option = 4;
+}
+
+// Types of action input.
+enum ActionInputType {
+  // Free-form text action.
+  ACTION_INPUT_TYPE_UNSPECIFIED = 0;
+  // Free-form text action.
+  ACTION_INPUT_TYPE_FREE_TEXT = 1;
+  // Selected from suggested options.
+  ACTION_INPUT_TYPE_SELECTED_OPTION = 2;
+  // Combat action.
+  ACTION_INPUT_TYPE_COMBAT = 3;
+  // Dialogue choice.
+  ACTION_INPUT_TYPE_DIALOGUE = 4;
+}
+
+// Suggested action option.
+message ActionOption {
+  // Option index.
+  int32 index = 1;
+  // Brief label.
+  string label = 2;
+  // Full description.
+  string description = 3;
+  // Type of action.
+  string action_type = 4;
+  // Whether this is a risky action.
+  bool is_risky = 5;
+}
+
+// Result of game mechanics.
+message GameMechanicResult {
+  // Type of result.
+  string type = 1;
+  // Description of what happened.
+  string description = 2;
+  // Numeric value if applicable.
+  int32 value = 3;
+  // Whether it was successful.
+  bool success = 4;
+}
+
+// Brief turn summary for history.
+message TurnSummary {
+  // Turn number.
+  int32 number = 1;
+  // Brief description of player action.
+  string action_summary = 2;
+  // Brief description of result.
+  string result_summary = 3;
+  // Timestamp.
+  google.protobuf.Timestamp timestamp = 4;
+  // Associated illustration ID if any.
+  string illustration_id = 5;
+}
+
+// Brief note summary.
+message NoteSummary {
+  // Note ID.
+  string id = 1;
+  // Note type (PIN/ANCHOR/THREAD).
+  string type = 2;
+  // Category.
+  string category = 3;
+  // Title.
+  string title = 4;
+  // Content.
+  string content = 5;
+  // Whether confirmed.
+  bool is_confirmed = 6;
+}
+
+// Note update data.
+message NoteUpdate {
+  // Updated title.
+  string title = 1;
+  // Updated content.
+  string content = 2;
+  // Updated category.
+  string category = 3;
+}
+
+// Brief note proposal summary.
+message NoteProposalSummary {
+  // Proposal ID.
+  string id = 1;
+  // Type of change proposed.
+  string change_type = 2;
+  // Proposed title.
+  string title = 3;
+  // Proposed content.
+  string content = 4;
+  // AI confidence level.
+  float confidence = 5;
+  // Reason for the proposal.
+  string reason = 6;
+}
+
+// Brief illustration summary.
+message IllustrationSummary {
+  // Illustration ID.
+  string id = 1;
+  // Associated turn number.
+  int32 turn_number = 2;
+  // Scene description.
+  string description = 3;
+  // URL to the image.
+  string url = 4;
+  // When generated.
+  google.protobuf.Timestamp generated_at = 5;
+}
+
+// Illustration priority levels.
+enum IllustrationPriority {
+  // Normal priority.
+  ILLUSTRATION_PRIORITY_UNSPECIFIED = 0;
+  // Normal priority.
+  ILLUSTRATION_PRIORITY_NORMAL = 1;
+  // High priority (user requested).
+  ILLUSTRATION_PRIORITY_HIGH = 2;
+  // Low priority (background generation).
+  ILLUSTRATION_PRIORITY_LOW = 3;
+}
+
+// Game ending types.
+enum GameEndingType {
+  // Unspecified ending.
+  GAME_ENDING_TYPE_UNSPECIFIED = 0;
+  // Successfully completed.
+  GAME_ENDING_TYPE_COMPLETED = 1;
+  // Abandoned mid-game.
+  GAME_ENDING_TYPE_ABANDONED = 2;
+  // Game over (character death, etc.).
+  GAME_ENDING_TYPE_GAME_OVER = 3;
+}
+
+// Brief story summary for listing.
+message StorySummary {
+  // Story ID.
+  string id = 1;
+  // Story title.
+  string title = 2;
+  // Brief description.
+  string description = 3;
+  // Genre.
+  string genre = 4;
+  // Estimated play time.
+  string estimated_time = 5;
+  // Difficulty rating.
+  string difficulty_rating = 6;
+  // Thumbnail URL.
+  string thumbnail_url = 7;
+}
+
+// Detailed story information.
+message StoryDetails {
+  // Story ID.
+  string id = 1;
+  // Story title.
+  string title = 2;
+  // Full description.
+  string description = 3;
+  // Genre.
+  string genre = 4;
+  // Tags.
+  repeated string tags = 5;
+  // Author.
+  string author = 6;
+  // Version.
+  string version = 7;
+  // Available character classes.
+  repeated CharacterClassOption character_classes = 8;
+  // World setting description.
+  string world_setting = 9;
+  // Content warnings.
+  repeated string content_warnings = 10;
+}
+
+// Character class option for story.
+message CharacterClassOption {
+  // Class identifier.
+  string id = 1;
+  // Class name.
+  string name = 2;
+  // Class description.
+  string description = 3;
+  // Starting abilities.
+  repeated string abilities = 4;
+}

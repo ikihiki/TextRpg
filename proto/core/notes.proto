@@ -1,0 +1,363 @@
+// Copyright 2024 TextRpg Project
+// Core Notes Service - Manages canonical notes (正史ノート)
+//
+// This service provides canonical notes management for the TextRPG platform.
+// Notes represent the "ground truth" of the story - facts that have been
+// confirmed by the player and should be preserved by the AI.
+
+syntax = "proto3";
+
+package textrpg.core;
+
+option csharp_namespace = "TextRpg.Core.Protos";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// NotesService provides canonical notes management functionality.
+// This service manages the "正史ノート" (Canonical Notes) system
+// using PIN/ANCHOR/THREADS structure for memory management.
+service NotesService {
+  // Creates a new note entry.
+  rpc CreateNote(CreateNoteRequest) returns (CreateNoteResponse);
+
+  // Retrieves a note by ID.
+  rpc GetNote(GetNoteRequest) returns (GetNoteResponse);
+
+  // Updates an existing note.
+  rpc UpdateNote(UpdateNoteRequest) returns (UpdateNoteResponse);
+
+  // Deletes a note.
+  rpc DeleteNote(DeleteNoteRequest) returns (DeleteNoteResponse);
+
+  // Lists notes for a session with filtering options.
+  rpc ListNotes(ListNotesRequest) returns (ListNotesResponse);
+
+  // Confirms a proposed note (moves from hypothesis to confirmed).
+  rpc ConfirmNote(ConfirmNoteRequest) returns (ConfirmNoteResponse);
+
+  // Proposes a note diff (typically from AI suggestions).
+  rpc ProposeNoteDiff(ProposeNoteDiffRequest) returns (ProposeNoteDiffResponse);
+
+  // Lists pending note proposals for review.
+  rpc ListProposals(ListProposalsRequest) returns (ListProposalsResponse);
+
+  // Accepts or rejects a note proposal.
+  rpc ResolveProposal(ResolveProposalRequest) returns (ResolveProposalResponse);
+
+  // Retrieves notes relevant to a given context (for AI context building).
+  rpc GetRelevantNotes(GetRelevantNotesRequest) returns (GetRelevantNotesResponse);
+}
+
+// Request to create a new note.
+message CreateNoteRequest {
+  // Session this note belongs to.
+  string session_id = 1;
+  // The note content.
+  Note note = 2;
+}
+
+// Response containing the created note.
+message CreateNoteResponse {
+  // The created note with assigned ID.
+  Note note = 1;
+}
+
+// Request to retrieve a note.
+message GetNoteRequest {
+  // The unique identifier of the note.
+  string note_id = 1;
+}
+
+// Response containing the requested note.
+message GetNoteResponse {
+  // The requested note.
+  Note note = 1;
+}
+
+// Request to update a note.
+message UpdateNoteRequest {
+  // The unique identifier of the note to update.
+  string note_id = 1;
+  // The updated note content.
+  Note note = 2;
+}
+
+// Response containing the updated note.
+message UpdateNoteResponse {
+  // The updated note.
+  Note note = 1;
+}
+
+// Request to delete a note.
+message DeleteNoteRequest {
+  // The unique identifier of the note to delete.
+  string note_id = 1;
+}
+
+// Response confirming the deletion.
+message DeleteNoteResponse {
+  // Whether the deletion was successful.
+  bool success = 1;
+}
+
+// Request to list notes.
+message ListNotesRequest {
+  // Session to list notes for.
+  string session_id = 1;
+  // Filter by note type.
+  NoteType type_filter = 2;
+  // Filter by note category.
+  NoteCategory category_filter = 3;
+  // Filter by confirmation status.
+  ConfirmationStatus status_filter = 4;
+  // Maximum number of notes to return.
+  int32 page_size = 5;
+  // Pagination token.
+  string page_token = 6;
+}
+
+// Response containing list of notes.
+message ListNotesResponse {
+  // List of notes.
+  repeated Note notes = 1;
+  // Token for next page.
+  string next_page_token = 2;
+}
+
+// Request to confirm a note.
+message ConfirmNoteRequest {
+  // The unique identifier of the note to confirm.
+  string note_id = 1;
+  // Optional evidence reference for the confirmation.
+  string evidence_ref = 2;
+}
+
+// Response confirming the note confirmation.
+message ConfirmNoteResponse {
+  // The confirmed note.
+  Note note = 1;
+}
+
+// Request to propose a note diff.
+message ProposeNoteDiffRequest {
+  // Session this proposal is for.
+  string session_id = 1;
+  // The proposed note changes.
+  NoteProposal proposal = 2;
+  // Source of the proposal (e.g., AI model identifier).
+  string source = 3;
+}
+
+// Response containing the created proposal.
+message ProposeNoteDiffResponse {
+  // The created proposal with assigned ID.
+  NoteProposal proposal = 1;
+}
+
+// Request to list pending proposals.
+message ListProposalsRequest {
+  // Session to list proposals for.
+  string session_id = 1;
+  // Maximum number of proposals to return.
+  int32 page_size = 2;
+  // Pagination token.
+  string page_token = 3;
+}
+
+// Response containing list of proposals.
+message ListProposalsResponse {
+  // List of pending proposals.
+  repeated NoteProposal proposals = 1;
+  // Token for next page.
+  string next_page_token = 2;
+}
+
+// Request to resolve a proposal.
+message ResolveProposalRequest {
+  // The unique identifier of the proposal.
+  string proposal_id = 1;
+  // Whether to accept the proposal.
+  bool accept = 2;
+  // Optional reason for the resolution.
+  string reason = 3;
+}
+
+// Response confirming the resolution.
+message ResolveProposalResponse {
+  // Whether the resolution was successful.
+  bool success = 1;
+  // The resulting note if accepted.
+  Note note = 2;
+}
+
+// Request to get relevant notes for context.
+message GetRelevantNotesRequest {
+  // Session to search notes in.
+  string session_id = 1;
+  // Context to find relevant notes for.
+  NoteContext context = 2;
+  // Maximum number of notes to return.
+  int32 max_results = 3;
+}
+
+// Response containing relevant notes.
+message GetRelevantNotesResponse {
+  // List of relevant notes.
+  repeated Note notes = 1;
+  // Relevance scores for each note.
+  repeated float relevance_scores = 2;
+}
+
+// Represents a canonical note entry.
+message Note {
+  // Unique identifier for the note.
+  string id = 1;
+  // Session this note belongs to.
+  string session_id = 2;
+  // Type of note (PIN/ANCHOR/THREAD).
+  NoteType type = 3;
+  // Category of the note content.
+  NoteCategory category = 4;
+  // Title or summary of the note.
+  string title = 5;
+  // Full content of the note.
+  string content = 6;
+  // Confirmation status.
+  ConfirmationStatus status = 7;
+  // Evidence references supporting this note.
+  repeated Evidence evidence = 8;
+  // Related note IDs (for THREAD connections).
+  repeated string related_note_ids = 9;
+  // Tags for categorization and search.
+  repeated string tags = 10;
+  // When this note was created.
+  google.protobuf.Timestamp created_at = 11;
+  // When this note was last updated.
+  google.protobuf.Timestamp updated_at = 12;
+  // Extension data for plugins.
+  google.protobuf.Struct ext = 13;
+}
+
+// Types of canonical notes.
+enum NoteType {
+  // Unspecified note type.
+  NOTE_TYPE_UNSPECIFIED = 0;
+  // PIN - Immutable core facts that should never change.
+  NOTE_TYPE_PIN = 1;
+  // ANCHOR - Important facts that provide stability to the narrative.
+  NOTE_TYPE_ANCHOR = 2;
+  // THREAD - Connected facts that form narrative threads.
+  NOTE_TYPE_THREAD = 3;
+}
+
+// Categories of note content.
+enum NoteCategory {
+  // Unspecified category.
+  NOTE_CATEGORY_UNSPECIFIED = 0;
+  // Character information.
+  NOTE_CATEGORY_CHARACTER = 1;
+  // Location information.
+  NOTE_CATEGORY_LOCATION = 2;
+  // Event or historical fact.
+  NOTE_CATEGORY_EVENT = 3;
+  // Item or object information.
+  NOTE_CATEGORY_ITEM = 4;
+  // Relationship between entities.
+  NOTE_CATEGORY_RELATIONSHIP = 5;
+  // World lore or background.
+  NOTE_CATEGORY_LORE = 6;
+  // Quest or objective information.
+  NOTE_CATEGORY_QUEST = 7;
+}
+
+// Confirmation status of a note.
+enum ConfirmationStatus {
+  // Unspecified status.
+  CONFIRMATION_STATUS_UNSPECIFIED = 0;
+  // Confirmed by human - canonical truth.
+  CONFIRMATION_STATUS_CONFIRMED = 1;
+  // Proposed by AI - awaiting human review.
+  CONFIRMATION_STATUS_HYPOTHESIS = 2;
+  // Deprecated - superseded by another note.
+  CONFIRMATION_STATUS_DEPRECATED = 3;
+}
+
+// Evidence supporting a note.
+message Evidence {
+  // Reference to the source (turn ID, dialogue ID, etc.).
+  string reference = 1;
+  // Type of evidence.
+  EvidenceType type = 2;
+  // Description or excerpt of the evidence.
+  string description = 3;
+  // When this evidence was recorded.
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// Types of evidence.
+enum EvidenceType {
+  // Unspecified evidence type.
+  EVIDENCE_TYPE_UNSPECIFIED = 0;
+  // Dialogue or conversation.
+  EVIDENCE_TYPE_DIALOGUE = 1;
+  // Game event.
+  EVIDENCE_TYPE_EVENT = 2;
+  // Player action.
+  EVIDENCE_TYPE_ACTION = 3;
+  // AI narration.
+  EVIDENCE_TYPE_NARRATION = 4;
+  // Player explicit input.
+  EVIDENCE_TYPE_PLAYER_INPUT = 5;
+}
+
+// Note proposal from AI for human review.
+message NoteProposal {
+  // Unique identifier for the proposal.
+  string id = 1;
+  // Session this proposal is for.
+  string session_id = 2;
+  // Type of change proposed.
+  ProposalType type = 3;
+  // For CREATE/UPDATE - the proposed note content.
+  Note proposed_note = 4;
+  // For UPDATE/DELETE - the original note ID.
+  string original_note_id = 5;
+  // Reason for the proposal.
+  string reason = 6;
+  // Confidence score from AI (0.0 to 1.0).
+  float confidence = 7;
+  // Source of the proposal.
+  string source = 8;
+  // When this proposal was created.
+  google.protobuf.Timestamp created_at = 9;
+}
+
+// Types of note proposals.
+enum ProposalType {
+  // Unspecified proposal type.
+  PROPOSAL_TYPE_UNSPECIFIED = 0;
+  // Create a new note.
+  PROPOSAL_TYPE_CREATE = 1;
+  // Update an existing note.
+  PROPOSAL_TYPE_UPDATE = 2;
+  // Delete a note.
+  PROPOSAL_TYPE_DELETE = 3;
+  // Merge multiple notes.
+  PROPOSAL_TYPE_MERGE = 4;
+}
+
+// Context for finding relevant notes.
+message NoteContext {
+  // Current location.
+  string location_id = 1;
+  // NPCs in the current scene.
+  repeated string npc_ids = 2;
+  // Active quest IDs.
+  repeated string quest_ids = 3;
+  // Keywords or topics.
+  repeated string keywords = 4;
+  // Turn range to consider.
+  int32 turn_start = 5;
+  int32 turn_end = 6;
+}

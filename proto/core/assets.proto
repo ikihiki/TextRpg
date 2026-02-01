@@ -1,0 +1,269 @@
+// Copyright 2024 TextRpg Project
+// Core Assets Service - Manages game assets (images, audio, etc.)
+//
+// This service provides asset management functionality for the TextRPG platform.
+// It handles storage and retrieval of game assets including illustrations,
+// character portraits, and other media.
+
+syntax = "proto3";
+
+package textrpg.core;
+
+option csharp_namespace = "TextRpg.Core.Protos";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// AssetService provides game asset management functionality.
+// This service manages illustrations, portraits, and other media assets.
+service AssetService {
+  // Uploads a new asset.
+  rpc UploadAsset(UploadAssetRequest) returns (UploadAssetResponse);
+
+  // Retrieves asset metadata by ID.
+  rpc GetAsset(GetAssetRequest) returns (GetAssetResponse);
+
+  // Downloads asset data.
+  rpc DownloadAsset(DownloadAssetRequest) returns (stream DownloadAssetResponse);
+
+  // Deletes an asset.
+  rpc DeleteAsset(DeleteAssetRequest) returns (DeleteAssetResponse);
+
+  // Lists assets for a session.
+  rpc ListAssets(ListAssetsRequest) returns (ListAssetsResponse);
+
+  // Updates asset metadata.
+  rpc UpdateAssetMetadata(UpdateAssetMetadataRequest) returns (UpdateAssetMetadataResponse);
+
+  // Retrieves Visual Canon (consistent character appearance) for a character.
+  rpc GetVisualCanon(GetVisualCanonRequest) returns (GetVisualCanonResponse);
+
+  // Updates Visual Canon for a character.
+  rpc UpdateVisualCanon(UpdateVisualCanonRequest) returns (UpdateVisualCanonResponse);
+}
+
+// Request to upload a new asset.
+message UploadAssetRequest {
+  // Session this asset belongs to.
+  string session_id = 1;
+  // Asset metadata.
+  AssetMetadata metadata = 2;
+  // Asset data (binary content).
+  bytes data = 3;
+}
+
+// Response containing the uploaded asset.
+message UploadAssetResponse {
+  // The uploaded asset with assigned ID.
+  Asset asset = 1;
+}
+
+// Request to retrieve asset metadata.
+message GetAssetRequest {
+  // The unique identifier of the asset.
+  string asset_id = 1;
+}
+
+// Response containing asset metadata.
+message GetAssetResponse {
+  // The asset metadata.
+  Asset asset = 1;
+}
+
+// Request to download asset data.
+message DownloadAssetRequest {
+  // The unique identifier of the asset.
+  string asset_id = 1;
+}
+
+// Response containing asset data chunk (streaming).
+message DownloadAssetResponse {
+  // Chunk of asset data.
+  bytes data = 1;
+}
+
+// Request to delete an asset.
+message DeleteAssetRequest {
+  // The unique identifier of the asset to delete.
+  string asset_id = 1;
+}
+
+// Response confirming the deletion.
+message DeleteAssetResponse {
+  // Whether the deletion was successful.
+  bool success = 1;
+}
+
+// Request to list assets.
+message ListAssetsRequest {
+  // Session to list assets for.
+  string session_id = 1;
+  // Filter by asset type.
+  AssetType type_filter = 2;
+  // Maximum number of assets to return.
+  int32 page_size = 3;
+  // Pagination token.
+  string page_token = 4;
+}
+
+// Response containing list of assets.
+message ListAssetsResponse {
+  // List of asset metadata.
+  repeated Asset assets = 1;
+  // Token for next page.
+  string next_page_token = 2;
+}
+
+// Request to update asset metadata.
+message UpdateAssetMetadataRequest {
+  // The unique identifier of the asset.
+  string asset_id = 1;
+  // Updated metadata.
+  AssetMetadata metadata = 2;
+}
+
+// Response containing updated asset.
+message UpdateAssetMetadataResponse {
+  // The updated asset.
+  Asset asset = 1;
+}
+
+// Request to get Visual Canon for a character.
+message GetVisualCanonRequest {
+  // Session containing the character.
+  string session_id = 1;
+  // Character identifier.
+  string character_id = 2;
+}
+
+// Response containing Visual Canon.
+message GetVisualCanonResponse {
+  // The Visual Canon for the character.
+  VisualCanon visual_canon = 1;
+}
+
+// Request to update Visual Canon.
+message UpdateVisualCanonRequest {
+  // Session containing the character.
+  string session_id = 1;
+  // Character identifier.
+  string character_id = 2;
+  // Updated Visual Canon.
+  VisualCanon visual_canon = 3;
+}
+
+// Response confirming the update.
+message UpdateVisualCanonResponse {
+  // The updated Visual Canon.
+  VisualCanon visual_canon = 1;
+}
+
+// Represents a game asset.
+message Asset {
+  // Unique identifier for the asset.
+  string id = 1;
+  // Session this asset belongs to.
+  string session_id = 2;
+  // Asset metadata.
+  AssetMetadata metadata = 3;
+  // URL or path to access the asset.
+  string url = 4;
+  // Size in bytes.
+  int64 size_bytes = 5;
+  // When this asset was created.
+  google.protobuf.Timestamp created_at = 6;
+  // When this asset was last updated.
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// Metadata for an asset.
+message AssetMetadata {
+  // Asset type.
+  AssetType type = 1;
+  // MIME type of the asset.
+  string mime_type = 2;
+  // Display name.
+  string name = 3;
+  // Description or caption.
+  string description = 4;
+  // Turn number this asset is associated with.
+  int32 turn_number = 5;
+  // Tags for categorization.
+  repeated string tags = 6;
+  // Generation prompt (if AI-generated).
+  string generation_prompt = 7;
+  // Generation source (cloud/local, model identifier).
+  string generation_source = 8;
+  // Related entity IDs (characters, locations, etc.).
+  repeated string related_entity_ids = 9;
+  // Extension data for plugins.
+  google.protobuf.Struct ext = 10;
+}
+
+// Types of assets.
+enum AssetType {
+  // Unspecified asset type.
+  ASSET_TYPE_UNSPECIFIED = 0;
+  // Scene illustration.
+  ASSET_TYPE_ILLUSTRATION = 1;
+  // Character portrait.
+  ASSET_TYPE_PORTRAIT = 2;
+  // Location background.
+  ASSET_TYPE_BACKGROUND = 3;
+  // Item image.
+  ASSET_TYPE_ITEM = 4;
+  // Audio clip.
+  ASSET_TYPE_AUDIO = 5;
+  // Document or report.
+  ASSET_TYPE_DOCUMENT = 6;
+}
+
+// Visual Canon - consistent visual representation of a character.
+message VisualCanon {
+  // Character identifier.
+  string character_id = 1;
+  // Base description for image generation.
+  string base_description = 2;
+  // Physical features that should remain consistent.
+  PhysicalFeatures features = 3;
+  // Style preferences for generated images.
+  StylePreferences style = 4;
+  // Reference images.
+  repeated string reference_asset_ids = 5;
+  // Version number for tracking changes.
+  int32 version = 6;
+  // When this Visual Canon was last updated.
+  google.protobuf.Timestamp updated_at = 7;
+  // Extension data for plugins.
+  google.protobuf.Struct ext = 8;
+}
+
+// Physical features for Visual Canon.
+message PhysicalFeatures {
+  // Hair color and style.
+  string hair = 1;
+  // Eye color.
+  string eyes = 2;
+  // Skin tone.
+  string skin_tone = 3;
+  // Build/body type.
+  string build = 4;
+  // Approximate age appearance.
+  string age_appearance = 5;
+  // Distinguishing marks (scars, tattoos, etc.).
+  repeated string distinguishing_marks = 6;
+  // Typical clothing or uniform.
+  string typical_attire = 7;
+}
+
+// Style preferences for image generation.
+message StylePreferences {
+  // Art style (realistic, anime, painterly, etc.).
+  string art_style = 1;
+  // Color palette preference.
+  string color_palette = 2;
+  // Lighting preference.
+  string lighting = 3;
+  // Additional style notes.
+  string notes = 4;
+}

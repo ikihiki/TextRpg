@@ -1,0 +1,473 @@
+// Copyright 2024 TextRpg Project
+// Core Session Service - Manages game sessions and state
+//
+// This service provides session management functionality for the TextRPG platform.
+// It handles game session lifecycle, state management, and player interactions.
+
+syntax = "proto3";
+
+package textrpg.core;
+
+option csharp_namespace = "TextRpg.Core.Protos";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// SessionService provides game session management functionality.
+// This is the primary entry point for session-related operations from Core Backend.
+service SessionService {
+  // Creates a new game session with the specified story and configuration.
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+
+  // Retrieves the current state of a game session.
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+
+  // Updates the state of an existing game session.
+  rpc UpdateSession(UpdateSessionRequest) returns (UpdateSessionResponse);
+
+  // Deletes a game session and all associated data.
+  rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse);
+
+  // Lists all sessions for a user with optional filtering.
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+
+  // Processes a player action and advances the game state.
+  rpc ProcessAction(ProcessActionRequest) returns (ProcessActionResponse);
+
+  // Retrieves the history of a game session (turns, events, etc.).
+  rpc GetSessionHistory(GetSessionHistoryRequest) returns (GetSessionHistoryResponse);
+}
+
+// Request to create a new game session.
+message CreateSessionRequest {
+  // The unique identifier of the user creating the session.
+  string user_id = 1;
+  // The unique identifier of the story to play.
+  string story_id = 2;
+  // Initial player character configuration.
+  PlayerCharacter player_character = 3;
+  // Optional session configuration overrides.
+  SessionConfig config = 4;
+}
+
+// Response containing the newly created session.
+message CreateSessionResponse {
+  // The created game session.
+  Session session = 1;
+}
+
+// Request to retrieve a session by ID.
+message GetSessionRequest {
+  // The unique identifier of the session.
+  string session_id = 1;
+}
+
+// Response containing the requested session.
+message GetSessionResponse {
+  // The requested game session.
+  Session session = 1;
+}
+
+// Request to update an existing session.
+message UpdateSessionRequest {
+  // The unique identifier of the session to update.
+  string session_id = 1;
+  // The updated game state.
+  GameState state = 2;
+}
+
+// Response confirming the session update.
+message UpdateSessionResponse {
+  // The updated game session.
+  Session session = 1;
+}
+
+// Request to delete a session.
+message DeleteSessionRequest {
+  // The unique identifier of the session to delete.
+  string session_id = 1;
+}
+
+// Response confirming the session deletion.
+message DeleteSessionResponse {
+  // Whether the deletion was successful.
+  bool success = 1;
+}
+
+// Request to list sessions for a user.
+message ListSessionsRequest {
+  // The unique identifier of the user.
+  string user_id = 1;
+  // Maximum number of sessions to return.
+  int32 page_size = 2;
+  // Token for pagination.
+  string page_token = 3;
+  // Optional filter by session status.
+  SessionStatus status_filter = 4;
+}
+
+// Response containing a list of sessions.
+message ListSessionsResponse {
+  // List of game sessions.
+  repeated Session sessions = 1;
+  // Token for the next page, empty if no more results.
+  string next_page_token = 2;
+}
+
+// Request to process a player action.
+message ProcessActionRequest {
+  // The unique identifier of the session.
+  string session_id = 1;
+  // The player action to process.
+  PlayerAction action = 2;
+}
+
+// Response containing the result of the action.
+message ProcessActionResponse {
+  // The updated game state after processing the action.
+  GameState state = 1;
+  // The narrative result of the action (AI-generated text).
+  NarrativeResult narrative = 2;
+  // Any combat or dice roll results.
+  repeated MechanicalResult mechanical_results = 3;
+  // Suggested next actions for the player.
+  repeated ActionSuggestion suggested_actions = 4;
+}
+
+// Request to get session history.
+message GetSessionHistoryRequest {
+  // The unique identifier of the session.
+  string session_id = 1;
+  // Maximum number of turns to return.
+  int32 page_size = 2;
+  // Token for pagination.
+  string page_token = 3;
+}
+
+// Response containing session history.
+message GetSessionHistoryResponse {
+  // List of historical turns.
+  repeated Turn turns = 1;
+  // Token for the next page, empty if no more results.
+  string next_page_token = 2;
+}
+
+// Represents a complete game session.
+message Session {
+  // Unique identifier for the session.
+  string id = 1;
+  // User who owns this session.
+  string user_id = 2;
+  // Story being played.
+  string story_id = 3;
+  // Current game state.
+  GameState state = 4;
+  // Session configuration.
+  SessionConfig config = 5;
+  // Current session status.
+  SessionStatus status = 6;
+  // When the session was created.
+  google.protobuf.Timestamp created_at = 7;
+  // When the session was last updated.
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+// Current state of a game session.
+message GameState {
+  // Current turn number.
+  int32 turn_number = 1;
+  // The player character state.
+  PlayerCharacter player = 2;
+  // Current location in the story.
+  Location location = 3;
+  // Active quests or objectives.
+  repeated Quest active_quests = 4;
+  // Inventory items.
+  repeated InventoryItem inventory = 5;
+  // NPCs currently in the scene.
+  repeated NPC scene_npcs = 6;
+  // Extension data for plugins.
+  google.protobuf.Struct ext = 7;
+}
+
+// Status of a game session.
+enum SessionStatus {
+  // Unspecified status.
+  SESSION_STATUS_UNSPECIFIED = 0;
+  // Session is active and can be played.
+  SESSION_STATUS_ACTIVE = 1;
+  // Session is paused.
+  SESSION_STATUS_PAUSED = 2;
+  // Session has been completed.
+  SESSION_STATUS_COMPLETED = 3;
+  // Session has been abandoned.
+  SESSION_STATUS_ABANDONED = 4;
+}
+
+// Session configuration options.
+message SessionConfig {
+  // Difficulty level.
+  DifficultyLevel difficulty = 1;
+  // Whether to enable illustrations.
+  bool illustrations_enabled = 2;
+  // Turn interval for automatic illustration generation.
+  int32 illustration_interval = 3;
+  // AI provider preference (cloud/local).
+  AIProviderPreference ai_provider = 4;
+  // Extension configuration for plugins.
+  google.protobuf.Struct ext = 5;
+}
+
+// Difficulty levels for the game.
+enum DifficultyLevel {
+  // Unspecified difficulty.
+  DIFFICULTY_LEVEL_UNSPECIFIED = 0;
+  // Easy mode - more forgiving gameplay.
+  DIFFICULTY_LEVEL_EASY = 1;
+  // Normal mode - balanced gameplay.
+  DIFFICULTY_LEVEL_NORMAL = 2;
+  // Hard mode - challenging gameplay.
+  DIFFICULTY_LEVEL_HARD = 3;
+}
+
+// AI provider preference for session.
+enum AIProviderPreference {
+  // Unspecified - use system default.
+  AI_PROVIDER_PREFERENCE_UNSPECIFIED = 0;
+  // Prefer cloud AI for higher quality.
+  AI_PROVIDER_PREFERENCE_CLOUD = 1;
+  // Prefer local AI for privacy.
+  AI_PROVIDER_PREFERENCE_LOCAL = 2;
+  // Use any available provider.
+  AI_PROVIDER_PREFERENCE_ANY = 3;
+}
+
+// Player character data.
+message PlayerCharacter {
+  // Character name.
+  string name = 1;
+  // Character class or archetype.
+  string character_class = 2;
+  // Character level.
+  int32 level = 3;
+  // Experience points.
+  int32 experience = 4;
+  // Character stats.
+  CharacterStats stats = 5;
+  // Character description.
+  string description = 6;
+  // Extension data for plugins.
+  google.protobuf.Struct ext = 7;
+}
+
+// Character statistics.
+message CharacterStats {
+  // Maximum hit points.
+  int32 max_hp = 1;
+  // Current hit points.
+  int32 current_hp = 2;
+  // Attack power.
+  int32 attack = 3;
+  // Defense power.
+  int32 defense = 4;
+  // Agility/speed.
+  int32 agility = 5;
+  // Intelligence/magic.
+  int32 intelligence = 6;
+  // Extension stats for plugins.
+  google.protobuf.Struct ext = 7;
+}
+
+// Current location in the game world.
+message Location {
+  // Location identifier.
+  string id = 1;
+  // Location name.
+  string name = 2;
+  // Location description.
+  string description = 3;
+  // Region or area this location belongs to.
+  string region = 4;
+}
+
+// Quest or objective data.
+message Quest {
+  // Quest identifier.
+  string id = 1;
+  // Quest title.
+  string title = 2;
+  // Quest description.
+  string description = 3;
+  // Current quest status.
+  QuestStatus status = 4;
+  // Quest objectives.
+  repeated QuestObjective objectives = 5;
+}
+
+// Status of a quest.
+enum QuestStatus {
+  // Unspecified status.
+  QUEST_STATUS_UNSPECIFIED = 0;
+  // Quest is active.
+  QUEST_STATUS_ACTIVE = 1;
+  // Quest is completed.
+  QUEST_STATUS_COMPLETED = 2;
+  // Quest has failed.
+  QUEST_STATUS_FAILED = 3;
+}
+
+// Individual quest objective.
+message QuestObjective {
+  // Objective description.
+  string description = 1;
+  // Whether this objective is completed.
+  bool completed = 2;
+}
+
+// Inventory item.
+message InventoryItem {
+  // Item identifier.
+  string id = 1;
+  // Item name.
+  string name = 2;
+  // Item description.
+  string description = 3;
+  // Quantity owned.
+  int32 quantity = 4;
+  // Item type.
+  ItemType type = 5;
+}
+
+// Types of inventory items.
+enum ItemType {
+  // Unspecified item type.
+  ITEM_TYPE_UNSPECIFIED = 0;
+  // Weapon item.
+  ITEM_TYPE_WEAPON = 1;
+  // Armor item.
+  ITEM_TYPE_ARMOR = 2;
+  // Consumable item.
+  ITEM_TYPE_CONSUMABLE = 3;
+  // Quest item.
+  ITEM_TYPE_QUEST = 4;
+  // Miscellaneous item.
+  ITEM_TYPE_MISC = 5;
+}
+
+// Non-player character in the scene.
+message NPC {
+  // NPC identifier.
+  string id = 1;
+  // NPC name.
+  string name = 2;
+  // NPC description.
+  string description = 3;
+  // NPC disposition towards player.
+  Disposition disposition = 4;
+}
+
+// NPC disposition towards the player.
+enum Disposition {
+  // Unspecified disposition.
+  DISPOSITION_UNSPECIFIED = 0;
+  // Friendly towards player.
+  DISPOSITION_FRIENDLY = 1;
+  // Neutral towards player.
+  DISPOSITION_NEUTRAL = 2;
+  // Hostile towards player.
+  DISPOSITION_HOSTILE = 3;
+}
+
+// Player action input.
+message PlayerAction {
+  // Type of action being performed.
+  ActionType type = 1;
+  // Free-text description of the action.
+  string description = 2;
+  // Target of the action (NPC, item, location, etc.).
+  string target_id = 3;
+  // Additional parameters for the action.
+  google.protobuf.Struct parameters = 4;
+}
+
+// Types of player actions.
+enum ActionType {
+  // Unspecified action type.
+  ACTION_TYPE_UNSPECIFIED = 0;
+  // Free-form narrative action.
+  ACTION_TYPE_NARRATIVE = 1;
+  // Combat action.
+  ACTION_TYPE_COMBAT = 2;
+  // Dialogue action.
+  ACTION_TYPE_DIALOGUE = 3;
+  // Movement action.
+  ACTION_TYPE_MOVEMENT = 4;
+  // Item usage action.
+  ACTION_TYPE_USE_ITEM = 5;
+  // Skill or ability action.
+  ACTION_TYPE_SKILL = 6;
+}
+
+// AI-generated narrative result.
+message NarrativeResult {
+  // The narrative text.
+  string text = 1;
+  // Scene description for illustration.
+  string scene_description = 2;
+  // Whether an illustration should be generated.
+  bool trigger_illustration = 3;
+}
+
+// Result of mechanical game operations (dice, combat, etc.).
+message MechanicalResult {
+  // Type of mechanical result.
+  MechanicalResultType type = 1;
+  // Description of what happened.
+  string description = 2;
+  // Numeric value if applicable.
+  int32 value = 3;
+  // Whether the result was successful.
+  bool success = 4;
+  // Detailed breakdown (e.g., dice rolls).
+  google.protobuf.Struct details = 5;
+}
+
+// Types of mechanical results.
+enum MechanicalResultType {
+  // Unspecified result type.
+  MECHANICAL_RESULT_TYPE_UNSPECIFIED = 0;
+  // Dice roll result.
+  MECHANICAL_RESULT_TYPE_DICE_ROLL = 1;
+  // Combat damage result.
+  MECHANICAL_RESULT_TYPE_DAMAGE = 2;
+  // Skill check result.
+  MECHANICAL_RESULT_TYPE_SKILL_CHECK = 3;
+  // Stat change result.
+  MECHANICAL_RESULT_TYPE_STAT_CHANGE = 4;
+}
+
+// Suggested next action for the player.
+message ActionSuggestion {
+  // Type of suggested action.
+  ActionType type = 1;
+  // Description of the suggested action.
+  string description = 2;
+  // Target identifier if applicable.
+  string target_id = 3;
+}
+
+// Historical turn data.
+message Turn {
+  // Turn number.
+  int32 number = 1;
+  // Player action taken.
+  PlayerAction action = 2;
+  // Narrative result.
+  NarrativeResult narrative = 3;
+  // Mechanical results.
+  repeated MechanicalResult mechanical_results = 4;
+  // Game state snapshot after this turn.
+  GameState state_snapshot = 5;
+  // When this turn occurred.
+  google.protobuf.Timestamp timestamp = 6;
+}

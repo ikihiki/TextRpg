@@ -1,0 +1,455 @@
+// Copyright 2024 TextRpg Project
+// AI Orchestrator Service - Coordinates AI operations
+//
+// This service provides AI orchestration functionality for the TextRPG platform.
+// It routes AI requests to appropriate providers (cloud or local), manages context,
+// sanitizes input/output, and ensures AI responses are appropriate.
+
+syntax = "proto3";
+
+package textrpg.ai;
+
+option csharp_namespace = "TextRpg.AI.Protos";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// OrchestratorService coordinates AI operations for the TextRPG platform.
+// It routes requests to appropriate AI providers and manages context building.
+service OrchestratorService {
+  // Generates narrative text for a game action.
+  rpc GenerateNarrative(GenerateNarrativeRequest) returns (GenerateNarrativeResponse);
+
+  // Generates action suggestions for the player.
+  rpc GenerateActionSuggestions(GenerateActionSuggestionsRequest) returns (GenerateActionSuggestionsResponse);
+
+  // Generates proposed notes from game context.
+  rpc GenerateNoteProposals(GenerateNoteProposalsRequest) returns (GenerateNoteProposalsResponse);
+
+  // Transforms combat log into narrative text.
+  rpc NarrateCombat(NarrateCombatRequest) returns (NarrateCombatResponse);
+
+  // Generates a scene description for illustration.
+  rpc GenerateSceneDescription(GenerateSceneDescriptionRequest) returns (GenerateSceneDescriptionResponse);
+
+  // Validates AI-generated content for consistency.
+  rpc ValidateContent(ValidateContentRequest) returns (ValidateContentResponse);
+
+  // Gets the status of AI providers.
+  rpc GetProviderStatus(GetProviderStatusRequest) returns (GetProviderStatusResponse);
+}
+
+// Request to generate narrative.
+message GenerateNarrativeRequest {
+  // Session context for narrative generation.
+  NarrativeContext context = 1;
+  // The player action to narrate.
+  ActionInput action = 2;
+  // AI generation parameters.
+  GenerationParams params = 3;
+}
+
+// Response with generated narrative.
+message GenerateNarrativeResponse {
+  // The generated narrative text.
+  string narrative = 1;
+  // Scene description for potential illustration.
+  string scene_description = 2;
+  // Whether this moment warrants an illustration.
+  bool suggest_illustration = 3;
+  // Provider that generated this response.
+  ProviderInfo provider = 4;
+  // Generation metrics.
+  GenerationMetrics metrics = 5;
+}
+
+// Request to generate action suggestions.
+message GenerateActionSuggestionsRequest {
+  // Session context.
+  NarrativeContext context = 1;
+  // Number of suggestions to generate.
+  int32 num_suggestions = 2;
+  // AI generation parameters.
+  GenerationParams params = 3;
+}
+
+// Response with action suggestions.
+message GenerateActionSuggestionsResponse {
+  // List of suggested actions.
+  repeated ActionSuggestion suggestions = 1;
+  // Provider that generated this response.
+  ProviderInfo provider = 2;
+  // Generation metrics.
+  GenerationMetrics metrics = 3;
+}
+
+// Request to generate note proposals.
+message GenerateNoteProposalsRequest {
+  // Session context.
+  NarrativeContext context = 1;
+  // Recent narrative text to analyze.
+  string recent_narrative = 2;
+  // Existing notes for reference.
+  repeated NoteReference existing_notes = 3;
+  // AI generation parameters.
+  GenerationParams params = 4;
+}
+
+// Response with note proposals.
+message GenerateNoteProposalsResponse {
+  // List of proposed notes.
+  repeated NoteProposal proposals = 1;
+  // Provider that generated this response.
+  ProviderInfo provider = 2;
+  // Generation metrics.
+  GenerationMetrics metrics = 3;
+}
+
+// Request to narrate combat.
+message NarrateCombatRequest {
+  // Session context.
+  NarrativeContext context = 1;
+  // Combat log entries to narrate.
+  repeated CombatLogEntry combat_log = 2;
+  // AI generation parameters.
+  GenerationParams params = 3;
+}
+
+// Response with combat narrative.
+message NarrateCombatResponse {
+  // The generated combat narrative.
+  string narrative = 1;
+  // Highlight moments for potential illustration.
+  repeated string highlight_moments = 2;
+  // Provider that generated this response.
+  ProviderInfo provider = 3;
+  // Generation metrics.
+  GenerationMetrics metrics = 4;
+}
+
+// Request to generate scene description.
+message GenerateSceneDescriptionRequest {
+  // Session context.
+  NarrativeContext context = 1;
+  // Recent narrative to describe.
+  string narrative = 2;
+  // Visual canon for characters.
+  repeated VisualCanonEntry visual_canon = 3;
+  // AI generation parameters.
+  GenerationParams params = 4;
+}
+
+// Response with scene description.
+message GenerateSceneDescriptionResponse {
+  // The scene description for image generation.
+  string scene_description = 1;
+  // Recommended art style.
+  string art_style = 2;
+  // Key elements to include.
+  repeated string key_elements = 3;
+  // Provider that generated this response.
+  ProviderInfo provider = 4;
+  // Generation metrics.
+  GenerationMetrics metrics = 5;
+}
+
+// Request to validate content.
+message ValidateContentRequest {
+  // Content to validate.
+  string content = 1;
+  // Validation rules to apply.
+  repeated ValidationRule rules = 2;
+  // Context for validation.
+  NarrativeContext context = 3;
+}
+
+// Response with validation results.
+message ValidateContentResponse {
+  // Whether the content is valid.
+  bool is_valid = 1;
+  // List of validation issues found.
+  repeated ValidationIssue issues = 2;
+  // Suggested corrections if any.
+  string suggested_correction = 3;
+}
+
+// Request to get provider status.
+message GetProviderStatusRequest {
+  // Empty request.
+}
+
+// Response with provider status.
+message GetProviderStatusResponse {
+  // Status of each AI provider.
+  repeated ProviderStatus providers = 1;
+  // Currently preferred provider.
+  string preferred_provider = 2;
+}
+
+// Context for narrative generation.
+message NarrativeContext {
+  // Session ID.
+  string session_id = 1;
+  // Story information.
+  StoryContext story = 2;
+  // Player character information.
+  CharacterContext player = 3;
+  // Current location.
+  LocationContext location = 4;
+  // NPCs in the scene.
+  repeated NPCContext npcs = 5;
+  // Recent narrative history.
+  repeated string recent_narrative = 6;
+  // Relevant canonical notes.
+  repeated NoteReference relevant_notes = 7;
+  // Current turn number.
+  int32 turn_number = 8;
+  // Extension context for plugins.
+  google.protobuf.Struct ext = 9;
+}
+
+// Story context.
+message StoryContext {
+  // Story ID.
+  string id = 1;
+  // Story title.
+  string title = 2;
+  // Genre.
+  string genre = 3;
+  // Tone and style.
+  string tone = 4;
+  // World setting summary.
+  string world_setting = 5;
+}
+
+// Character context.
+message CharacterContext {
+  // Character name.
+  string name = 1;
+  // Character class.
+  string character_class = 2;
+  // Character description.
+  string description = 3;
+  // Current stats summary.
+  string stats_summary = 4;
+  // Important traits.
+  repeated string traits = 5;
+}
+
+// Location context.
+message LocationContext {
+  // Location name.
+  string name = 1;
+  // Location description.
+  string description = 2;
+  // Atmosphere/mood.
+  string atmosphere = 3;
+}
+
+// NPC context.
+message NPCContext {
+  // NPC name.
+  string name = 1;
+  // NPC description.
+  string description = 2;
+  // Relationship to player.
+  string relationship = 3;
+  // Current disposition.
+  string disposition = 4;
+}
+
+// Reference to a canonical note.
+message NoteReference {
+  // Note ID.
+  string id = 1;
+  // Note type.
+  string type = 2;
+  // Note title.
+  string title = 3;
+  // Note content.
+  string content = 4;
+}
+
+// Player action input.
+message ActionInput {
+  // Action type.
+  string type = 1;
+  // Action description.
+  string description = 2;
+  // Target identifier.
+  string target_id = 3;
+  // Additional parameters.
+  google.protobuf.Struct parameters = 4;
+}
+
+// AI generation parameters.
+message GenerationParams {
+  // Preferred provider (cloud/local).
+  string provider_preference = 1;
+  // Temperature for generation.
+  float temperature = 2;
+  // Maximum tokens to generate.
+  int32 max_tokens = 3;
+  // Custom prompt additions.
+  string custom_prompt = 4;
+  // Whether to enable mature content.
+  bool mature_content = 5;
+}
+
+// Suggested action from AI.
+message ActionSuggestion {
+  // Suggested action description.
+  string description = 1;
+  // Action type.
+  string action_type = 2;
+  // Target if applicable.
+  string target_id = 3;
+  // Brief explanation of why this is suggested.
+  string reason = 4;
+  // Risk level.
+  RiskLevel risk_level = 5;
+}
+
+// Risk levels for actions.
+enum RiskLevel {
+  // Unknown risk.
+  RISK_LEVEL_UNSPECIFIED = 0;
+  // Safe action.
+  RISK_LEVEL_SAFE = 1;
+  // Low risk.
+  RISK_LEVEL_LOW = 2;
+  // Medium risk.
+  RISK_LEVEL_MEDIUM = 3;
+  // High risk.
+  RISK_LEVEL_HIGH = 4;
+}
+
+// Proposed note from AI.
+message NoteProposal {
+  // Proposal type (create/update/delete).
+  string type = 1;
+  // Proposed note title.
+  string title = 2;
+  // Proposed note content.
+  string content = 3;
+  // Note category.
+  string category = 4;
+  // Confidence score (0.0 to 1.0).
+  float confidence = 5;
+  // Reason for the proposal.
+  string reason = 6;
+  // Related existing note ID if update/delete.
+  string related_note_id = 7;
+}
+
+// Combat log entry for narration.
+message CombatLogEntry {
+  // Actor (player/NPC name).
+  string actor = 1;
+  // Action taken.
+  string action = 2;
+  // Target of action.
+  string target = 3;
+  // Dice roll result.
+  int32 roll_result = 4;
+  // Damage dealt.
+  int32 damage = 5;
+  // Whether the action was successful.
+  bool success = 6;
+  // Additional details.
+  string details = 7;
+}
+
+// Visual canon entry for image generation.
+message VisualCanonEntry {
+  // Character name.
+  string character_name = 1;
+  // Visual description.
+  string description = 2;
+  // Key features.
+  repeated string key_features = 3;
+}
+
+// Validation rule.
+message ValidationRule {
+  // Rule type.
+  ValidationType type = 1;
+  // Rule parameters.
+  google.protobuf.Struct parameters = 2;
+}
+
+// Types of validation.
+enum ValidationType {
+  // Unspecified validation.
+  VALIDATION_TYPE_UNSPECIFIED = 0;
+  // Check for character consistency.
+  VALIDATION_TYPE_CHARACTER_CONSISTENCY = 1;
+  // Check for world consistency.
+  VALIDATION_TYPE_WORLD_CONSISTENCY = 2;
+  // Check for content policy compliance.
+  VALIDATION_TYPE_CONTENT_POLICY = 3;
+  // Check for narrative coherence.
+  VALIDATION_TYPE_NARRATIVE_COHERENCE = 4;
+}
+
+// Validation issue found.
+message ValidationIssue {
+  // Issue type.
+  ValidationType type = 1;
+  // Severity level.
+  IssueSeverity severity = 2;
+  // Description of the issue.
+  string description = 3;
+  // Location in the content.
+  string location = 4;
+}
+
+// Issue severity levels.
+enum IssueSeverity {
+  // Unknown severity.
+  ISSUE_SEVERITY_UNSPECIFIED = 0;
+  // Warning - can be ignored.
+  ISSUE_SEVERITY_WARNING = 1;
+  // Error - should be fixed.
+  ISSUE_SEVERITY_ERROR = 2;
+  // Critical - must be fixed.
+  ISSUE_SEVERITY_CRITICAL = 3;
+}
+
+// Information about AI provider.
+message ProviderInfo {
+  // Provider name.
+  string name = 1;
+  // Model used.
+  string model = 2;
+  // Whether this is a local provider.
+  bool is_local = 3;
+}
+
+// Status of an AI provider.
+message ProviderStatus {
+  // Provider name.
+  string name = 1;
+  // Whether the provider is available.
+  bool is_available = 2;
+  // Whether this is a local provider.
+  bool is_local = 3;
+  // Current load (0.0 to 1.0).
+  float current_load = 4;
+  // Average response time in milliseconds.
+  int32 avg_response_ms = 5;
+  // Last health check timestamp.
+  google.protobuf.Timestamp last_health_check = 6;
+}
+
+// Generation metrics.
+message GenerationMetrics {
+  // Tokens in the prompt.
+  int32 prompt_tokens = 1;
+  // Tokens in the response.
+  int32 completion_tokens = 2;
+  // Total tokens used.
+  int32 total_tokens = 3;
+  // Generation time in milliseconds.
+  int32 generation_time_ms = 4;
+}

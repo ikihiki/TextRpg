@@ -1,0 +1,657 @@
+// Copyright 2024 TextRpg Project
+// Local Gateway Service - Bidirectional streaming for local AI execution
+//
+// This service provides the interface for local gateway (自宅PC) communication.
+// It uses bidirectional streaming to allow the local gateway to receive work
+// requests and send results back to the server without requiring inbound connections.
+
+syntax = "proto3";
+
+package textrpg.local;
+
+option csharp_namespace = "TextRpg.Local.Protos";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// GatewayService provides bidirectional communication with local gateways.
+// Local gateways connect to this service and maintain a persistent stream
+// to receive work requests and send back results.
+service GatewayService {
+  // Establishes a bidirectional work stream.
+  // The local gateway connects and receives work items, sending back results.
+  rpc WorkStream(stream WorkStreamMessage) returns (stream WorkStreamMessage);
+
+  // Registers a local gateway with the server.
+  rpc RegisterGateway(RegisterGatewayRequest) returns (RegisterGatewayResponse);
+
+  // Sends a heartbeat to indicate the gateway is still alive.
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+
+  // Gets the current configuration for the gateway.
+  rpc GetConfiguration(GetConfigurationRequest) returns (GetConfigurationResponse);
+
+  // Updates the gateway's capabilities.
+  rpc UpdateCapabilities(UpdateCapabilitiesRequest) returns (UpdateCapabilitiesResponse);
+
+  // Reports execution metrics from the gateway.
+  rpc ReportMetrics(ReportMetricsRequest) returns (ReportMetricsResponse);
+}
+
+// Message envelope for bidirectional work stream.
+message WorkStreamMessage {
+  // Message type.
+  oneof message {
+    // Work request from server to gateway.
+    WorkRequest work_request = 1;
+    // Work result from gateway to server.
+    WorkResult work_result = 2;
+    // Progress update from gateway to server.
+    WorkProgress work_progress = 3;
+    // Acknowledgment message.
+    Acknowledgment acknowledgment = 4;
+    // Control message.
+    ControlMessage control = 5;
+  }
+}
+
+// Work request sent from server to local gateway.
+message WorkRequest {
+  // Unique work item ID.
+  string work_id = 1;
+  // Type of work to perform.
+  WorkType work_type = 2;
+  // Work parameters.
+  google.protobuf.Struct parameters = 3;
+  // Priority level.
+  WorkPriority priority = 4;
+  // Maximum execution time in seconds.
+  int32 timeout_seconds = 5;
+  // Session context.
+  string session_id = 6;
+  // When this work was requested.
+  google.protobuf.Timestamp requested_at = 7;
+}
+
+// Result of work execution sent from gateway to server.
+message WorkResult {
+  // Work item ID this result is for.
+  string work_id = 1;
+  // Whether the work completed successfully.
+  bool success = 2;
+  // Result data.
+  google.protobuf.Struct result = 3;
+  // Error message if failed.
+  string error_message = 4;
+  // Error details if failed.
+  ErrorDetails error_details = 5;
+  // Execution metrics.
+  ExecutionMetrics metrics = 6;
+  // When the work completed.
+  google.protobuf.Timestamp completed_at = 7;
+}
+
+// Progress update during work execution.
+message WorkProgress {
+  // Work item ID.
+  string work_id = 1;
+  // Progress percentage (0-100).
+  int32 progress_percent = 2;
+  // Current status message.
+  string status_message = 3;
+  // Estimated time remaining in seconds.
+  int32 estimated_remaining_seconds = 4;
+}
+
+// Acknowledgment for received messages.
+message Acknowledgment {
+  // Message ID being acknowledged.
+  string message_id = 1;
+  // Whether the message was accepted.
+  bool accepted = 2;
+  // Reason if not accepted.
+  string reason = 3;
+}
+
+// Control message for stream management.
+message ControlMessage {
+  // Control message type.
+  ControlType type = 1;
+  // Control parameters.
+  google.protobuf.Struct parameters = 2;
+}
+
+// Types of control messages.
+enum ControlType {
+  // Unspecified control type.
+  CONTROL_TYPE_UNSPECIFIED = 0;
+  // Pause receiving new work.
+  CONTROL_TYPE_PAUSE = 1;
+  // Resume receiving work.
+  CONTROL_TYPE_RESUME = 2;
+  // Cancel a specific work item.
+  CONTROL_TYPE_CANCEL_WORK = 3;
+  // Graceful disconnect.
+  CONTROL_TYPE_DISCONNECT = 4;
+  // Update configuration.
+  CONTROL_TYPE_UPDATE_CONFIG = 5;
+}
+
+// Types of work that can be executed locally.
+enum WorkType {
+  // Unspecified work type.
+  WORK_TYPE_UNSPECIFIED = 0;
+  // Text generation using local LLM.
+  WORK_TYPE_LLM_GENERATION = 1;
+  // Image generation using local model.
+  WORK_TYPE_IMAGE_GENERATION = 2;
+  // Text embedding generation.
+  WORK_TYPE_EMBEDDING = 3;
+  // Image analysis/captioning.
+  WORK_TYPE_IMAGE_ANALYSIS = 4;
+  // Voice synthesis.
+  WORK_TYPE_VOICE_SYNTHESIS = 5;
+  // Custom plugin execution.
+  WORK_TYPE_PLUGIN = 6;
+}
+
+// Work priority levels.
+enum WorkPriority {
+  // Normal priority.
+  WORK_PRIORITY_UNSPECIFIED = 0;
+  // Low priority - can be delayed.
+  WORK_PRIORITY_LOW = 1;
+  // Normal priority.
+  WORK_PRIORITY_NORMAL = 2;
+  // High priority - process soon.
+  WORK_PRIORITY_HIGH = 3;
+  // Urgent - process immediately.
+  WORK_PRIORITY_URGENT = 4;
+}
+
+// Error details for failed work.
+message ErrorDetails {
+  // Error code.
+  string code = 1;
+  // Error category.
+  ErrorCategory category = 2;
+  // Whether the work can be retried.
+  bool is_retryable = 3;
+  // Suggested retry delay in seconds.
+  int32 retry_after_seconds = 4;
+  // Stack trace if available.
+  string stack_trace = 5;
+}
+
+// Error categories.
+enum ErrorCategory {
+  // Unknown error.
+  ERROR_CATEGORY_UNSPECIFIED = 0;
+  // Transient error - may succeed on retry.
+  ERROR_CATEGORY_TRANSIENT = 1;
+  // Permanent error - will not succeed on retry.
+  ERROR_CATEGORY_PERMANENT = 2;
+  // Resource exhaustion (memory, disk, etc.).
+  ERROR_CATEGORY_RESOURCE = 3;
+  // Timeout exceeded.
+  ERROR_CATEGORY_TIMEOUT = 4;
+  // Model or configuration error.
+  ERROR_CATEGORY_CONFIGURATION = 5;
+}
+
+// Execution metrics for completed work.
+message ExecutionMetrics {
+  // Total execution time in milliseconds.
+  int32 execution_time_ms = 1;
+  // Queue wait time in milliseconds.
+  int32 queue_time_ms = 2;
+  // Model inference time in milliseconds.
+  int32 inference_time_ms = 3;
+  // Memory usage in bytes.
+  int64 memory_used_bytes = 4;
+  // GPU memory usage in bytes.
+  int64 gpu_memory_used_bytes = 5;
+  // Tokens processed (for LLM).
+  int32 tokens_processed = 6;
+}
+
+// Request to register a local gateway.
+message RegisterGatewayRequest {
+  // Gateway identifier.
+  string gateway_id = 1;
+  // Gateway display name.
+  string name = 2;
+  // Gateway capabilities.
+  GatewayCapabilities capabilities = 3;
+  // System information.
+  SystemInfo system_info = 4;
+  // Gateway version.
+  string version = 5;
+}
+
+// Response for gateway registration.
+message RegisterGatewayResponse {
+  // Whether registration was successful.
+  bool success = 1;
+  // Assigned gateway token for authentication.
+  string gateway_token = 2;
+  // Initial configuration.
+  GatewayConfiguration configuration = 3;
+  // Message about registration.
+  string message = 4;
+}
+
+// Request for heartbeat.
+message HeartbeatRequest {
+  // Gateway identifier.
+  string gateway_id = 1;
+  // Current status.
+  GatewayStatus status = 2;
+  // Current load information.
+  LoadInfo load = 3;
+  // Timestamp.
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// Response for heartbeat.
+message HeartbeatResponse {
+  // Whether the gateway is still registered.
+  bool acknowledged = 1;
+  // Any configuration updates.
+  GatewayConfiguration configuration_update = 2;
+  // Pending work count.
+  int32 pending_work_count = 3;
+}
+
+// Request to get configuration.
+message GetConfigurationRequest {
+  // Gateway identifier.
+  string gateway_id = 1;
+}
+
+// Response with configuration.
+message GetConfigurationResponse {
+  // Gateway configuration.
+  GatewayConfiguration configuration = 1;
+}
+
+// Request to update capabilities.
+message UpdateCapabilitiesRequest {
+  // Gateway identifier.
+  string gateway_id = 1;
+  // Updated capabilities.
+  GatewayCapabilities capabilities = 2;
+}
+
+// Response for capability update.
+message UpdateCapabilitiesResponse {
+  // Whether the update was successful.
+  bool success = 1;
+}
+
+// Request to report metrics.
+message ReportMetricsRequest {
+  // Gateway identifier.
+  string gateway_id = 1;
+  // Metrics data.
+  GatewayMetrics metrics = 2;
+  // Reporting period start.
+  google.protobuf.Timestamp period_start = 3;
+  // Reporting period end.
+  google.protobuf.Timestamp period_end = 4;
+}
+
+// Response for metrics report.
+message ReportMetricsResponse {
+  // Whether the report was accepted.
+  bool accepted = 1;
+}
+
+// Gateway capabilities.
+message GatewayCapabilities {
+  // Supported work types.
+  repeated WorkType supported_work_types = 1;
+  // Available LLM models.
+  repeated ModelInfo llm_models = 2;
+  // Available image generation models.
+  repeated ModelInfo image_models = 3;
+  // Maximum concurrent work items.
+  int32 max_concurrent_work = 4;
+  // Maximum text context length.
+  int32 max_context_length = 5;
+  // Maximum image resolution.
+  ImageResolution max_image_resolution = 6;
+  // Whether GPU is available.
+  bool has_gpu = 7;
+  // GPU memory in bytes.
+  int64 gpu_memory_bytes = 8;
+  // Installed plugins.
+  repeated PluginInfo plugins = 9;
+}
+
+// Model information.
+message ModelInfo {
+  // Model identifier.
+  string id = 1;
+  // Model display name.
+  string name = 2;
+  // Model type.
+  string type = 3;
+  // Model size category.
+  string size = 4;
+  // Maximum context length.
+  int32 max_context = 5;
+  // Whether the model is loaded.
+  bool is_loaded = 6;
+}
+
+// Image resolution specification.
+message ImageResolution {
+  // Maximum width.
+  int32 max_width = 1;
+  // Maximum height.
+  int32 max_height = 2;
+}
+
+// Plugin information.
+message PluginInfo {
+  // Plugin identifier.
+  string id = 1;
+  // Plugin name.
+  string name = 2;
+  // Plugin version.
+  string version = 3;
+  // Plugin description.
+  string description = 4;
+}
+
+// System information.
+message SystemInfo {
+  // Operating system.
+  string os = 1;
+  // OS version.
+  string os_version = 2;
+  // CPU model.
+  string cpu = 3;
+  // Total RAM in bytes.
+  int64 ram_bytes = 4;
+  // GPU model.
+  string gpu = 5;
+  // Total GPU memory in bytes.
+  int64 gpu_memory_bytes = 6;
+  // Disk space available in bytes.
+  int64 disk_available_bytes = 7;
+}
+
+// Gateway status.
+enum GatewayStatus {
+  // Unknown status.
+  GATEWAY_STATUS_UNSPECIFIED = 0;
+  // Gateway is online and ready.
+  GATEWAY_STATUS_ONLINE = 1;
+  // Gateway is busy processing work.
+  GATEWAY_STATUS_BUSY = 2;
+  // Gateway is paused.
+  GATEWAY_STATUS_PAUSED = 3;
+  // Gateway is offline.
+  GATEWAY_STATUS_OFFLINE = 4;
+  // Gateway is starting up.
+  GATEWAY_STATUS_STARTING = 5;
+  // Gateway is shutting down.
+  GATEWAY_STATUS_SHUTTING_DOWN = 6;
+}
+
+// Current load information.
+message LoadInfo {
+  // CPU usage percentage (0-100).
+  float cpu_percent = 1;
+  // Memory usage percentage (0-100).
+  float memory_percent = 2;
+  // GPU usage percentage (0-100).
+  float gpu_percent = 3;
+  // GPU memory usage percentage (0-100).
+  float gpu_memory_percent = 4;
+  // Number of active work items.
+  int32 active_work_count = 5;
+  // Queue depth.
+  int32 queue_depth = 6;
+}
+
+// Gateway configuration.
+message GatewayConfiguration {
+  // Maximum concurrent work items.
+  int32 max_concurrent_work = 1;
+  // Work types to accept.
+  repeated WorkType accepted_work_types = 2;
+  // Heartbeat interval in seconds.
+  int32 heartbeat_interval_seconds = 3;
+  // Maximum work timeout in seconds.
+  int32 max_timeout_seconds = 4;
+  // Whether to auto-load models.
+  bool auto_load_models = 5;
+  // Preferred models by work type.
+  map<string, string> preferred_models = 6;
+  // Custom settings.
+  google.protobuf.Struct custom_settings = 7;
+}
+
+// Gateway metrics for reporting.
+message GatewayMetrics {
+  // Total work items processed.
+  int32 total_work_processed = 1;
+  // Successful work items.
+  int32 successful_work_count = 2;
+  // Failed work items.
+  int32 failed_work_count = 3;
+  // Total processing time in seconds.
+  int64 total_processing_time_seconds = 4;
+  // Average processing time in milliseconds.
+  int32 avg_processing_time_ms = 5;
+  // Work counts by type.
+  map<string, int32> work_counts_by_type = 6;
+  // Error counts by category.
+  map<string, int32> error_counts_by_category = 7;
+  // Peak memory usage in bytes.
+  int64 peak_memory_bytes = 8;
+  // Peak GPU memory usage in bytes.
+  int64 peak_gpu_memory_bytes = 9;
+}
+
+// LLMExecutorService provides direct LLM execution interface.
+// This is used by the gateway to expose its LLM capabilities.
+service LLMExecutorService {
+  // Generates text using the local LLM.
+  rpc Generate(LLMGenerateRequest) returns (LLMGenerateResponse);
+
+  // Generates text with streaming response.
+  rpc GenerateStream(LLMGenerateRequest) returns (stream LLMGenerateChunk);
+
+  // Gets embeddings for text.
+  rpc GetEmbeddings(GetEmbeddingsRequest) returns (GetEmbeddingsResponse);
+
+  // Lists available models.
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+
+  // Loads a model into memory.
+  rpc LoadModel(LoadModelRequest) returns (LoadModelResponse);
+
+  // Unloads a model from memory.
+  rpc UnloadModel(UnloadModelRequest) returns (UnloadModelResponse);
+}
+
+// Request for LLM text generation.
+message LLMGenerateRequest {
+  // Model to use.
+  string model = 1;
+  // Prompt text.
+  string prompt = 2;
+  // System prompt.
+  string system_prompt = 3;
+  // Maximum tokens to generate.
+  int32 max_tokens = 4;
+  // Temperature for sampling.
+  float temperature = 5;
+  // Top-p for nucleus sampling.
+  float top_p = 6;
+  // Stop sequences.
+  repeated string stop_sequences = 7;
+  // Additional parameters.
+  google.protobuf.Struct parameters = 8;
+}
+
+// Response for LLM generation.
+message LLMGenerateResponse {
+  // Generated text.
+  string text = 1;
+  // Finish reason.
+  string finish_reason = 2;
+  // Usage statistics.
+  LLMUsage usage = 3;
+  // Model used.
+  string model = 4;
+}
+
+// Streaming chunk for LLM generation.
+message LLMGenerateChunk {
+  // Text chunk.
+  string text = 1;
+  // Whether this is the final chunk.
+  bool is_final = 2;
+  // Finish reason if final.
+  string finish_reason = 3;
+  // Usage statistics if final.
+  LLMUsage usage = 4;
+}
+
+// LLM usage statistics.
+message LLMUsage {
+  // Prompt tokens.
+  int32 prompt_tokens = 1;
+  // Completion tokens.
+  int32 completion_tokens = 2;
+  // Total tokens.
+  int32 total_tokens = 3;
+}
+
+// Request to get embeddings.
+message GetEmbeddingsRequest {
+  // Model to use.
+  string model = 1;
+  // Texts to embed.
+  repeated string texts = 2;
+}
+
+// Response with embeddings.
+message GetEmbeddingsResponse {
+  // Embeddings for each text.
+  repeated Embedding embeddings = 1;
+  // Model used.
+  string model = 2;
+  // Total tokens processed.
+  int32 total_tokens = 3;
+}
+
+// Single embedding vector.
+message Embedding {
+  // Embedding values.
+  repeated float values = 1;
+}
+
+// Request to list models.
+message ListModelsRequest {
+  // Optional filter by type.
+  string type_filter = 1;
+}
+
+// Response with model list.
+message ListModelsResponse {
+  // Available models.
+  repeated ModelInfo models = 1;
+}
+
+// Request to load a model.
+message LoadModelRequest {
+  // Model identifier.
+  string model_id = 1;
+  // Load options.
+  google.protobuf.Struct options = 2;
+}
+
+// Response for model loading.
+message LoadModelResponse {
+  // Whether loading was successful.
+  bool success = 1;
+  // Message about the result.
+  string message = 2;
+  // Memory used by the model.
+  int64 memory_used_bytes = 3;
+}
+
+// Request to unload a model.
+message UnloadModelRequest {
+  // Model identifier.
+  string model_id = 1;
+}
+
+// Response for model unloading.
+message UnloadModelResponse {
+  // Whether unloading was successful.
+  bool success = 1;
+  // Memory freed.
+  int64 memory_freed_bytes = 2;
+}
+
+// ImageExecutorService provides image generation interface.
+service ImageExecutorService {
+  // Generates an image.
+  rpc Generate(ImageGenerateRequest) returns (ImageGenerateResponse);
+
+  // Lists available image models.
+  rpc ListModels(ListImageModelsRequest) returns (ListImageModelsResponse);
+}
+
+// Request for image generation.
+message ImageGenerateRequest {
+  // Model to use.
+  string model = 1;
+  // Prompt for generation.
+  string prompt = 2;
+  // Negative prompt.
+  string negative_prompt = 3;
+  // Image width.
+  int32 width = 4;
+  // Image height.
+  int32 height = 5;
+  // Number of inference steps.
+  int32 steps = 6;
+  // Guidance scale.
+  float guidance_scale = 7;
+  // Random seed.
+  int64 seed = 8;
+  // Additional parameters.
+  google.protobuf.Struct parameters = 9;
+}
+
+// Response for image generation.
+message ImageGenerateResponse {
+  // Generated image data (PNG format).
+  bytes image_data = 1;
+  // Seed used for generation.
+  int64 seed = 2;
+  // Model used.
+  string model = 3;
+  // Generation time in milliseconds.
+  int32 generation_time_ms = 4;
+}
+
+// Request to list image models.
+message ListImageModelsRequest {
+  // Optional filter.
+  string filter = 1;
+}
+
+// Response with image model list.
+message ListImageModelsResponse {
+  // Available models.
+  repeated ModelInfo models = 1;
+}

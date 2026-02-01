@@ -1,0 +1,454 @@
+// Copyright 2024 TextRpg Project
+// Jobs Worker Service - Background job processing
+//
+// This service provides background job processing functionality for the TextRPG platform.
+// It manages asynchronous tasks such as illustration generation, report generation,
+// and statistics calculation using Hangfire.
+
+syntax = "proto3";
+
+package textrpg.jobs;
+
+option csharp_namespace = "TextRpg.Jobs.Protos";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// WorkerService provides job management functionality.
+// This service coordinates background tasks and plugin executions.
+service WorkerService {
+  // Enqueues a new job for processing.
+  rpc EnqueueJob(EnqueueJobRequest) returns (EnqueueJobResponse);
+
+  // Gets the status of a job.
+  rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusResponse);
+
+  // Cancels a pending or running job.
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+
+  // Lists jobs with optional filtering.
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
+
+  // Retries a failed job.
+  rpc RetryJob(RetryJobRequest) returns (RetryJobResponse);
+
+  // Gets the result of a completed job.
+  rpc GetJobResult(GetJobResultRequest) returns (GetJobResultResponse);
+
+  // Subscribes to job status updates.
+  rpc SubscribeJobUpdates(SubscribeJobUpdatesRequest) returns (stream JobStatusUpdate);
+}
+
+// Request to enqueue a job.
+message EnqueueJobRequest {
+  // Type of job to execute.
+  JobType job_type = 1;
+  // Session context for the job.
+  string session_id = 2;
+  // Job-specific parameters.
+  google.protobuf.Struct parameters = 3;
+  // Job priority.
+  JobPriority priority = 4;
+  // Optional delay before execution.
+  int32 delay_seconds = 5;
+  // Preferred execution target (cloud/local).
+  ExecutionTarget target = 6;
+}
+
+// Response with enqueued job info.
+message EnqueueJobResponse {
+  // The created job ID.
+  string job_id = 1;
+  // Estimated processing time in seconds.
+  int32 estimated_time_seconds = 2;
+  // Queue position.
+  int32 queue_position = 3;
+}
+
+// Request to get job status.
+message GetJobStatusRequest {
+  // Job ID.
+  string job_id = 1;
+}
+
+// Response with job status.
+message GetJobStatusResponse {
+  // Job information.
+  JobInfo job = 1;
+}
+
+// Request to cancel a job.
+message CancelJobRequest {
+  // Job ID.
+  string job_id = 1;
+  // Reason for cancellation.
+  string reason = 2;
+}
+
+// Response confirming cancellation.
+message CancelJobResponse {
+  // Whether the cancellation was successful.
+  bool success = 1;
+  // Message explaining the result.
+  string message = 2;
+}
+
+// Request to list jobs.
+message ListJobsRequest {
+  // Optional session filter.
+  string session_id = 1;
+  // Optional status filter.
+  JobStatus status_filter = 2;
+  // Optional type filter.
+  JobType type_filter = 3;
+  // Maximum number of jobs to return.
+  int32 page_size = 4;
+  // Pagination token.
+  string page_token = 5;
+}
+
+// Response with list of jobs.
+message ListJobsResponse {
+  // List of jobs.
+  repeated JobInfo jobs = 1;
+  // Token for next page.
+  string next_page_token = 2;
+}
+
+// Request to retry a job.
+message RetryJobRequest {
+  // Job ID to retry.
+  string job_id = 1;
+  // Optional parameter overrides.
+  google.protobuf.Struct parameter_overrides = 2;
+}
+
+// Response confirming retry.
+message RetryJobResponse {
+  // New job ID for the retry.
+  string new_job_id = 1;
+  // Whether the retry was scheduled.
+  bool success = 2;
+}
+
+// Request to get job result.
+message GetJobResultRequest {
+  // Job ID.
+  string job_id = 1;
+}
+
+// Response with job result.
+message GetJobResultResponse {
+  // Whether the job completed successfully.
+  bool success = 1;
+  // Job result data.
+  google.protobuf.Struct result = 2;
+  // Error message if failed.
+  string error_message = 3;
+}
+
+// Request to subscribe to job updates.
+message SubscribeJobUpdatesRequest {
+  // Optional filter by session.
+  string session_id = 1;
+  // Optional filter by job IDs.
+  repeated string job_ids = 2;
+}
+
+// Job status update notification.
+message JobStatusUpdate {
+  // Job ID.
+  string job_id = 1;
+  // New status.
+  JobStatus status = 2;
+  // Progress percentage (0-100).
+  int32 progress_percent = 3;
+  // Status message.
+  string message = 4;
+  // Timestamp of the update.
+  google.protobuf.Timestamp timestamp = 5;
+  // Result data if completed.
+  google.protobuf.Struct result = 6;
+}
+
+// Job information.
+message JobInfo {
+  // Job ID.
+  string id = 1;
+  // Job type.
+  JobType type = 2;
+  // Current status.
+  JobStatus status = 3;
+  // Session this job belongs to.
+  string session_id = 4;
+  // Job parameters.
+  google.protobuf.Struct parameters = 5;
+  // Job priority.
+  JobPriority priority = 6;
+  // Execution target.
+  ExecutionTarget target = 7;
+  // Progress percentage.
+  int32 progress_percent = 8;
+  // Current status message.
+  string status_message = 9;
+  // Number of retry attempts.
+  int32 retry_count = 10;
+  // When the job was created.
+  google.protobuf.Timestamp created_at = 11;
+  // When the job started processing.
+  google.protobuf.Timestamp started_at = 12;
+  // When the job completed.
+  google.protobuf.Timestamp completed_at = 13;
+  // Error message if failed.
+  string error_message = 14;
+}
+
+// Types of jobs.
+enum JobType {
+  // Unspecified job type.
+  JOB_TYPE_UNSPECIFIED = 0;
+  // Generate illustration.
+  JOB_TYPE_ILLUSTRATION = 1;
+  // Generate character portrait.
+  JOB_TYPE_PORTRAIT = 2;
+  // Generate report or summary.
+  JOB_TYPE_REPORT = 3;
+  // Calculate statistics.
+  JOB_TYPE_STATISTICS = 4;
+  // Execute AI task via local gateway.
+  JOB_TYPE_LOCAL_AI = 5;
+  // Plugin execution.
+  JOB_TYPE_PLUGIN = 6;
+  // Export game data.
+  JOB_TYPE_EXPORT = 7;
+  // Generate novel/story document.
+  JOB_TYPE_NOVEL_GENERATION = 8;
+}
+
+// Job status values.
+enum JobStatus {
+  // Unknown status.
+  JOB_STATUS_UNSPECIFIED = 0;
+  // Job is queued for processing.
+  JOB_STATUS_QUEUED = 1;
+  // Job is currently processing.
+  JOB_STATUS_PROCESSING = 2;
+  // Job completed successfully.
+  JOB_STATUS_COMPLETED = 3;
+  // Job failed.
+  JOB_STATUS_FAILED = 4;
+  // Job was cancelled.
+  JOB_STATUS_CANCELLED = 5;
+  // Job is waiting for local gateway.
+  JOB_STATUS_WAITING_LOCAL = 6;
+  // Job is scheduled for later execution.
+  JOB_STATUS_SCHEDULED = 7;
+}
+
+// Job priority levels.
+enum JobPriority {
+  // Default priority.
+  JOB_PRIORITY_UNSPECIFIED = 0;
+  // Low priority - background tasks.
+  JOB_PRIORITY_LOW = 1;
+  // Normal priority.
+  JOB_PRIORITY_NORMAL = 2;
+  // High priority - user-requested.
+  JOB_PRIORITY_HIGH = 3;
+  // Critical - system tasks.
+  JOB_PRIORITY_CRITICAL = 4;
+}
+
+// Execution target for jobs.
+enum ExecutionTarget {
+  // Any available target.
+  EXECUTION_TARGET_UNSPECIFIED = 0;
+  // Cloud execution only.
+  EXECUTION_TARGET_CLOUD = 1;
+  // Local gateway execution only.
+  EXECUTION_TARGET_LOCAL = 2;
+  // Prefer local, fallback to cloud.
+  EXECUTION_TARGET_PREFER_LOCAL = 3;
+  // Prefer cloud, fallback to local.
+  EXECUTION_TARGET_PREFER_CLOUD = 4;
+}
+
+// IllustrationJobService provides specialized illustration job operations.
+service IllustrationJobService {
+  // Enqueues an illustration generation job.
+  rpc EnqueueIllustration(EnqueueIllustrationRequest) returns (EnqueueIllustrationResponse);
+
+  // Gets the result of an illustration job.
+  rpc GetIllustrationResult(GetIllustrationResultRequest) returns (GetIllustrationResultResponse);
+}
+
+// Request to enqueue illustration generation.
+message EnqueueIllustrationRequest {
+  // Session ID.
+  string session_id = 1;
+  // Turn number this illustration is for.
+  int32 turn_number = 2;
+  // Scene description for generation.
+  string scene_description = 3;
+  // Visual canon for characters.
+  repeated VisualCanonInput visual_canon = 4;
+  // Style preferences.
+  StylePreferences style = 5;
+  // Priority level.
+  JobPriority priority = 6;
+  // Preferred target.
+  ExecutionTarget target = 7;
+}
+
+// Visual canon input for illustration.
+message VisualCanonInput {
+  // Character name.
+  string character_name = 1;
+  // Character visual description.
+  string description = 2;
+  // Key features to preserve.
+  repeated string key_features = 3;
+}
+
+// Style preferences for illustration.
+message StylePreferences {
+  // Art style (realistic, anime, etc.).
+  string art_style = 1;
+  // Color palette.
+  string color_palette = 2;
+  // Lighting mood.
+  string lighting = 3;
+  // Image dimensions.
+  ImageDimensions dimensions = 4;
+}
+
+// Image dimensions.
+message ImageDimensions {
+  // Width in pixels.
+  int32 width = 1;
+  // Height in pixels.
+  int32 height = 2;
+}
+
+// Response for illustration job enqueue.
+message EnqueueIllustrationResponse {
+  // Job ID.
+  string job_id = 1;
+  // Estimated completion time in seconds.
+  int32 estimated_time_seconds = 2;
+}
+
+// Request to get illustration result.
+message GetIllustrationResultRequest {
+  // Job ID.
+  string job_id = 1;
+}
+
+// Response with illustration result.
+message GetIllustrationResultResponse {
+  // Job status.
+  JobStatus status = 1;
+  // Asset ID of the generated illustration.
+  string asset_id = 2;
+  // URL to the illustration.
+  string image_url = 3;
+  // Generation metadata.
+  IllustrationMetadata metadata = 4;
+  // Error message if failed.
+  string error_message = 5;
+}
+
+// Metadata for generated illustration.
+message IllustrationMetadata {
+  // Prompt used for generation.
+  string prompt_used = 1;
+  // Model used for generation.
+  string model = 2;
+  // Generation seed.
+  int64 seed = 3;
+  // Generation time in milliseconds.
+  int32 generation_time_ms = 4;
+  // Whether generated locally.
+  bool is_local = 5;
+}
+
+// ReportJobService provides report generation operations.
+service ReportJobService {
+  // Enqueues a report generation job.
+  rpc EnqueueReport(EnqueueReportRequest) returns (EnqueueReportResponse);
+
+  // Gets the result of a report job.
+  rpc GetReportResult(GetReportResultRequest) returns (GetReportResultResponse);
+}
+
+// Request to enqueue report generation.
+message EnqueueReportRequest {
+  // Session ID.
+  string session_id = 1;
+  // Report type.
+  ReportType report_type = 2;
+  // Report parameters.
+  ReportParams params = 3;
+  // Priority level.
+  JobPriority priority = 4;
+}
+
+// Types of reports.
+enum ReportType {
+  // Unspecified report type.
+  REPORT_TYPE_UNSPECIFIED = 0;
+  // Adventure summary.
+  REPORT_TYPE_SUMMARY = 1;
+  // Character biography.
+  REPORT_TYPE_CHARACTER_BIO = 2;
+  // World lore compilation.
+  REPORT_TYPE_WORLD_LORE = 3;
+  // Novel-style narrative.
+  REPORT_TYPE_NOVEL = 4;
+  // Statistics report.
+  REPORT_TYPE_STATISTICS = 5;
+}
+
+// Report generation parameters.
+message ReportParams {
+  // Turn range start.
+  int32 turn_start = 1;
+  // Turn range end.
+  int32 turn_end = 2;
+  // Output format.
+  string output_format = 3;
+  // Include illustrations.
+  bool include_illustrations = 4;
+  // Additional options.
+  google.protobuf.Struct options = 5;
+}
+
+// Response for report job enqueue.
+message EnqueueReportResponse {
+  // Job ID.
+  string job_id = 1;
+  // Estimated completion time in seconds.
+  int32 estimated_time_seconds = 2;
+}
+
+// Request to get report result.
+message GetReportResultRequest {
+  // Job ID.
+  string job_id = 1;
+}
+
+// Response with report result.
+message GetReportResultResponse {
+  // Job status.
+  JobStatus status = 1;
+  // Asset ID of the generated report.
+  string asset_id = 2;
+  // URL to download the report.
+  string download_url = 3;
+  // Report title.
+  string title = 4;
+  // Report format.
+  string format = 5;
+  // Error message if failed.
+  string error_message = 6;
+}
