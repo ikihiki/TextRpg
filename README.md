@@ -172,14 +172,35 @@ AIとユーザーが共同で物語を進行・編集できる
 ## ライセンス
 
 未定（検討中）
-了解です。
-以下を **README.md にそのまま追記できる「リポジトリ構成案」**として用意しました。
-.NET Aspire 前提・gRPC境界前提・「後から分離しやすい」構成になっています。
 
 ## リポジトリ構成
 
 本リポジトリは **.NET Aspire を中心にしたマルチプロジェクト構成**を採用します。  
 最初は「まとめて動く」ことを優先しつつ、**ホットな部分（AI / Jobs / Gateway）から独立デプロイできる**ように設計されています。
+
+### Vertical Slice Architecture（垂直スライスアーキテクチャ）
+
+各バックエンドプロジェクトは **Vertical Slice Architecture** を採用しています。
+
+従来のレイヤードアーキテクチャでは、技術的関心事（Controllers / Services / Repositories）でコードを分割しますが、  
+Vertical Slice では **機能・ユースケース単位**でコードを配置します。
+
+**メリット**:
+- 🎯 **高い凝集性**: 1つの機能に必要なコードがすべて同じ場所にある
+- 🔗 **低い結合度**: 機能間の依存が少なく、変更の影響範囲が限定的
+- 👥 **並行開発**: チームが独立して異なる機能を開発可能
+- 📦 **独立テスト**: 機能単位でのテストが容易
+
+**構成パターン**:
+```
+Features/
+├─ <機能名>/
+│  ├─ <ユースケース>/
+│  │  ├─ <Command/Query>.cs    # リクエスト定義
+│  │  ├─ <Handler>.cs          # ハンドラー実装
+│  │  └─ <Validator>.cs        # バリデーション
+│  └─ Common/                  # 機能内共有（エンティティ、リポジトリ）
+```
 
 ```text
 /
@@ -217,70 +238,159 @@ AIとユーザーが共同で物語を進行・編集できる
 │  │
 │  ├─ CoreBackend/            # Unit B: Core Backend（Stable）
 │  │  ├─ CoreBackend.csproj
-│  │  ├─ Services/
-│  │  │  ├─ SessionService.cs
-│  │  │  ├─ NotesService.cs
-│  │  │  └─ AssetService.cs
-│  │  ├─ Domain/
-│  │  │  ├─ State/
-│  │  │  ├─ Notes/
-│  │  │  └─ Stories/
-│  │  ├─ Persistence/
-│  │  │  ├─ DbContext.cs
-│  │  │  └─ Migrations/
-│  │  └─ Configuration/
+│  │  ├─ Features/            # Vertical Slice: 機能単位でコードを配置
+│  │  │  ├─ Sessions/         # セッション管理機能
+│  │  │  │  ├─ CreateSession/
+│  │  │  │  │  ├─ CreateSessionCommand.cs
+│  │  │  │  │  ├─ CreateSessionHandler.cs
+│  │  │  │  │  └─ CreateSessionValidator.cs
+│  │  │  │  ├─ GetSession/
+│  │  │  │  │  ├─ GetSessionQuery.cs
+│  │  │  │  │  └─ GetSessionHandler.cs
+│  │  │  │  ├─ UpdateSessionState/
+│  │  │  │  │  ├─ UpdateSessionStateCommand.cs
+│  │  │  │  │  └─ UpdateSessionStateHandler.cs
+│  │  │  │  └─ Common/
+│  │  │  │     ├─ Session.cs
+│  │  │  │     ├─ SessionState.cs
+│  │  │  │     └─ ISessionRepository.cs
+│  │  │  ├─ Notes/            # 正史ノート管理機能
+│  │  │  │  ├─ CreateNote/
+│  │  │  │  ├─ UpdateNote/
+│  │  │  │  ├─ GetNotes/
+│  │  │  │  └─ Common/
+│  │  │  │     ├─ Note.cs
+│  │  │  │     └─ INoteRepository.cs
+│  │  │  ├─ Assets/           # アセット管理機能
+│  │  │  │  ├─ UploadAsset/
+│  │  │  │  ├─ GetAssets/
+│  │  │  │  └─ Common/
+│  │  │  │     ├─ Asset.cs
+│  │  │  │     └─ IAssetRepository.cs
+│  │  │  └─ Turns/            # ターン管理機能
+│  │  │     ├─ CreateTurn/
+│  │  │     ├─ RewindTurn/
+│  │  │     └─ Common/
+│  │  │        └─ Turn.cs
+│  │  ├─ Infrastructure/      # 横断的関心事
+│  │  │  ├─ Persistence/
+│  │  │  │  ├─ AppDbContext.cs
+│  │  │  │  └─ Migrations/
+│  │  │  └─ Configuration/
+│  │  └─ Services/            # gRPC サービスエンドポイント
+│  │     ├─ SessionService.cs
+│  │     ├─ NotesService.cs
+│  │     └─ AssetService.cs
 │  │
 │  ├─ RulesEngine/            # Unit C: ルールエンジン（ライブラリ）
 │  │  ├─ RulesEngine.csproj
-│  │  ├─ Combat/
-│  │  ├─ Dice/
+│  │  ├─ Features/
+│  │  │  ├─ Combat/           # 戦闘判定機能
+│  │  │  │  ├─ ResolveCombat/
+│  │  │  │  └─ Common/
+│  │  │  └─ Dice/             # ダイスロール機能
+│  │  │     ├─ RollDice/
+│  │  │     └─ Common/
 │  │  └─ Tests/
 │  │
 │  ├─ AIOrchestrator/         # Unit D: AI Orchestrator（Hot）
 │  │  ├─ AIOrchestrator.csproj
-│  │  ├─ Services/
-│  │  │  └─ OrchestratorService.cs
-│  │  ├─ Routing/
-│  │  │  └─ PolicyRouter.cs
-│  │  ├─ Context/
-│  │  │  ├─ ContextBuilder.cs
-│  │  │  └─ Sanitizer.cs
-│  │  ├─ Providers/
-│  │  │  ├─ CloudProvider.cs
-│  │  │  └─ LocalProvider.cs
-│  │  └─ Validation/
+│  │  ├─ Features/            # Vertical Slice: 機能単位でコードを配置
+│  │  │  ├─ NarrativeGeneration/    # 物語生成機能
+│  │  │  │  ├─ GenerateIntro/
+│  │  │  │  │  ├─ GenerateIntroCommand.cs
+│  │  │  │  │  └─ GenerateIntroHandler.cs
+│  │  │  │  ├─ GenerateGameplay/
+│  │  │  │  └─ Common/
+│  │  │  │     └─ NarrativeResult.cs
+│  │  │  ├─ Suggestions/      # 提案生成機能
+│  │  │  │  ├─ SuggestNote/
+│  │  │  │  ├─ SuggestAction/
+│  │  │  │  └─ Common/
+│  │  │  ├─ ContextBuilding/  # コンテキスト構築機能
+│  │  │  │  ├─ BuildContext/
+│  │  │  │  │  ├─ BuildContextCommand.cs
+│  │  │  │  │  └─ BuildContextHandler.cs
+│  │  │  │  └─ Sanitize/
+│  │  │  │     └─ Sanitizer.cs
+│  │  │  └─ Routing/          # プロバイダールーティング機能
+│  │  │     ├─ RouteToProvider/
+│  │  │     │  └─ PolicyRouter.cs
+│  │  │     └─ Common/
+│  │  │        ├─ CloudProvider.cs
+│  │  │        └─ LocalProvider.cs
+│  │  └─ Services/            # gRPC サービスエンドポイント
+│  │     └─ OrchestratorService.cs
 │  │
 │  ├─ Jobs/                   # Unit E: Hangfire Worker / Plugins
 │  │  ├─ Jobs.csproj
-│  │  ├─ Workers/
-│  │  │  ├─ IllustrationJob.cs
-│  │  │  ├─ ReportJob.cs
-│  │  │  └─ LocalExecutionJob.cs
-│  │  ├─ Plugins/
-│  │  │  └─ PluginRuntime.cs
-│  │  └─ Hangfire/
+│  │  ├─ Features/            # Vertical Slice: 機能単位でコードを配置
+│  │  │  ├─ Illustration/     # 挿絵生成機能
+│  │  │  │  ├─ GenerateIllustration/
+│  │  │  │  │  ├─ IllustrationJob.cs
+│  │  │  │  │  └─ IllustrationJobHandler.cs
+│  │  │  │  └─ Common/
+│  │  │  ├─ Reports/          # レポート生成機能
+│  │  │  │  ├─ GenerateSessionReport/
+│  │  │  │  ├─ GenerateNovelExport/
+│  │  │  │  └─ Common/
+│  │  │  └─ LocalExecution/   # ローカル実行機能
+│  │  │     ├─ ExecuteLocal/
+│  │  │     │  └─ LocalExecutionJob.cs
+│  │  │     └─ Common/
+│  │  ├─ Infrastructure/
+│  │  │  ├─ Hangfire/
+│  │  │  └─ Plugins/
+│  │  │     └─ PluginRuntime.cs
+│  │  └─ Services/            # gRPC サービスエンドポイント
 │  │
 │  ├─ BffGateway/             # Unit A: gRPC-Web BFF
 │  │  ├─ BffGateway.csproj
-│  │  ├─ Services/
-│  │  │  └─ GameApiService.cs
-│  │  ├─ Auth/
-│  │  └─ Middleware/
+│  │  ├─ Features/            # Vertical Slice: 機能単位でコードを配置
+│  │  │  ├─ Scenarios/        # シナリオ管理機能
+│  │  │  │  ├─ CreateScenario/
+│  │  │  │  ├─ ListScenarios/
+│  │  │  │  └─ Common/
+│  │  │  ├─ GameSessions/     # ゲームセッション機能
+│  │  │  │  ├─ StartSession/
+│  │  │  │  ├─ ResumeSession/
+│  │  │  │  └─ Common/
+│  │  │  └─ Gameplay/         # ゲームプレイ機能
+│  │  │     ├─ SubmitAction/
+│  │  │     ├─ RewindTurn/
+│  │  │     └─ Common/
+│  │  ├─ Infrastructure/
+│  │  │  ├─ Auth/
+│  │  │  └─ Middleware/
+│  │  └─ Services/            # gRPC サービスエンドポイント
+│  │     └─ GameApiService.cs
 │  │
-│  └─ LocalGateway/            # Unit F: 自宅PC側（別デプロイ）
+│  └─ LocalGateway/           # Unit F: 自宅PC側（別デプロイ）
 │     ├─ LocalGateway.csproj
-│     ├─ Streaming/
-│     │  └─ WorkStreamClient.cs
-│     ├─ Executors/
-│     │  ├─ LlmExecutor.cs
-│     │  └─ ImageExecutor.cs
-│     └─ Configuration/
+│     ├─ Features/            # Vertical Slice: 機能単位でコードを配置
+│     │  ├─ LlmExecution/     # LLM実行機能
+│     │  │  ├─ ExecuteLlm/
+│     │  │  │  └─ LlmExecutor.cs
+│     │  │  └─ Common/
+│     │  └─ ImageGeneration/  # 画像生成機能
+│     │     ├─ GenerateImage/
+│     │     │  └─ ImageExecutor.cs
+│     │     └─ Common/
+│     ├─ Infrastructure/
+│     │  ├─ Streaming/
+│     │  │  └─ WorkStreamClient.cs
+│     │  └─ Configuration/
+│     └─ Services/            # gRPC サービスエンドポイント
 │
 ├─ frontend/                  # フロントエンド（TypeScript）
 │  ├─ package.json
 │  ├─ src/
 │  │  ├─ grpc/                # gRPC-Webクライアント
-│  │  ├─ ui/
+│  │  ├─ features/            # Vertical Slice: 機能単位でコードを配置
+│  │  │  ├─ scenarios/
+│  │  │  ├─ gameplay/
+│  │  │  └─ notes/
+│  │  ├─ ui/                  # 共有UIコンポーネント
 │  │  │  ├─ ActionPanel.tsx
 │  │  │  ├─ NotesPanel.tsx
 │  │  │  └─ Illustration.tsx
