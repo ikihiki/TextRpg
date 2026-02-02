@@ -1,0 +1,320 @@
+syntax = "proto3";
+
+package textrpg.core;
+
+option csharp_namespace = "TextRpg.Core";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Core Backend service for session and state management.
+// This service owns the single source of truth for game state.
+service SessionService {
+  // Session lifecycle
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc UpdateSessionStatus(UpdateSessionStatusRequest) returns (UpdateSessionStatusResponse);
+  rpc ListUserSessions(ListUserSessionsRequest) returns (ListUserSessionsResponse);
+  
+  // Session state management
+  rpc GetSessionState(GetSessionStateRequest) returns (GetSessionStateResponse);
+  rpc UpdateSessionState(UpdateSessionStateRequest) returns (UpdateSessionStateResponse);
+  
+  // Turn management
+  rpc CreateTurn(CreateTurnRequest) returns (CreateTurnResponse);
+  rpc GetTurn(GetTurnRequest) returns (GetTurnResponse);
+  rpc GetTurns(GetTurnsRequest) returns (GetTurnsResponse);
+  rpc InvalidateTurnsAfter(InvalidateTurnsAfterRequest) returns (InvalidateTurnsAfterResponse);
+  
+  // Chapter management
+  rpc CreateChapter(CreateChapterRequest) returns (CreateChapterResponse);
+  rpc GetChapters(GetChaptersRequest) returns (GetChaptersResponse);
+  rpc UpdateChapterSummary(UpdateChapterSummaryRequest) returns (UpdateChapterSummaryResponse);
+  
+  // Context building for AI
+  rpc BuildAIContext(BuildAIContextRequest) returns (BuildAIContextResponse);
+  
+  // Protagonist management
+  rpc SetProtagonist(SetProtagonistRequest) returns (SetProtagonistResponse);
+  rpc GetProtagonist(GetProtagonistRequest) returns (GetProtagonistResponse);
+}
+
+// Session Messages
+
+message CreateSessionRequest {
+  string scenario_id = 1;
+  string user_id = 2;
+  google.protobuf.Struct initial_state = 3; // Extensible initial state
+}
+
+message CreateSessionResponse {
+  string session_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  SessionData session = 1;
+}
+
+message SessionData {
+  string session_id = 1;
+  string scenario_id = 2;
+  string user_id = 3;
+  SessionStatus status = 4;
+  int32 current_turn = 5;
+  int32 current_chapter = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp last_played_at = 9;
+  google.protobuf.Struct metadata = 10; // Extensible metadata
+}
+
+enum SessionStatus {
+  SESSION_STATUS_UNSPECIFIED = 0;
+  SESSION_STATUS_PREPARING = 1;
+  SESSION_STATUS_ACTIVE = 2;
+  SESSION_STATUS_PAUSED = 3;
+  SESSION_STATUS_COMPLETED = 4;
+  SESSION_STATUS_ABANDONED = 5;
+}
+
+message UpdateSessionStatusRequest {
+  string session_id = 1;
+  SessionStatus status = 2;
+}
+
+message UpdateSessionStatusResponse {
+  bool success = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}
+
+message ListUserSessionsRequest {
+  string user_id = 1;
+  SessionStatus status_filter = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+  string order_by = 5; // e.g., "last_played_at DESC"
+}
+
+message ListUserSessionsResponse {
+  repeated SessionData sessions = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+// State Messages
+
+message GetSessionStateRequest {
+  string session_id = 1;
+}
+
+message GetSessionStateResponse {
+  SessionState state = 1;
+}
+
+message SessionState {
+  string session_id = 1;
+  int32 version = 2; // For optimistic locking
+  google.protobuf.Struct state_data = 3; // Flexible state storage
+  google.protobuf.Struct extensions = 4; // Plugin-extensible state
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message UpdateSessionStateRequest {
+  string session_id = 1;
+  int32 expected_version = 2; // For optimistic locking
+  google.protobuf.Struct state_data = 3;
+  google.protobuf.Struct extensions = 4;
+}
+
+message UpdateSessionStateResponse {
+  bool success = 1;
+  int32 new_version = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+// Turn Messages
+
+message CreateTurnRequest {
+  string session_id = 1;
+  int32 turn_number = 2;
+  string player_input = 3;
+  string narrative = 4;
+  TurnType turn_type = 5;
+  google.protobuf.Struct metadata = 6; // Extensible metadata (e.g., dice rolls, combat results)
+}
+
+enum TurnType {
+  TURN_TYPE_UNSPECIFIED = 0;
+  TURN_TYPE_INTRO = 1;
+  TURN_TYPE_DIALOGUE = 2;
+  TURN_TYPE_ACTION = 3;
+  TURN_TYPE_COMBAT = 4;
+  TURN_TYPE_EVENT = 5;
+  TURN_TYPE_SYSTEM = 6;
+}
+
+message CreateTurnResponse {
+  int32 turn_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+message GetTurnRequest {
+  string session_id = 1;
+  int32 turn_id = 2;
+}
+
+message GetTurnResponse {
+  TurnData turn = 1;
+}
+
+message TurnData {
+  int32 turn_id = 1;
+  string session_id = 2;
+  int32 turn_number = 3;
+  string player_input = 4;
+  string narrative = 5;
+  TurnType turn_type = 6;
+  bool is_valid = 7; // False if invalidated by rewind
+  int32 chapter_id = 8;
+  google.protobuf.Struct metadata = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message GetTurnsRequest {
+  string session_id = 1;
+  int32 from_turn = 2;
+  int32 to_turn = 3;
+  bool include_invalid = 4; // Include invalidated turns
+}
+
+message GetTurnsResponse {
+  repeated TurnData turns = 1;
+}
+
+message InvalidateTurnsAfterRequest {
+  string session_id = 1;
+  int32 target_turn_id = 2;
+}
+
+message InvalidateTurnsAfterResponse {
+  bool success = 1;
+  int32 invalidated_count = 2;
+}
+
+// Chapter Messages
+
+message CreateChapterRequest {
+  string session_id = 1;
+  int32 chapter_number = 2;
+  string title = 3;
+  int32 start_turn = 4;
+}
+
+message CreateChapterResponse {
+  int32 chapter_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+message GetChaptersRequest {
+  string session_id = 1;
+}
+
+message GetChaptersResponse {
+  repeated ChapterData chapters = 1;
+}
+
+message ChapterData {
+  int32 chapter_id = 1;
+  string session_id = 2;
+  int32 chapter_number = 3;
+  string title = 4;
+  string summary = 5;
+  int32 start_turn = 6;
+  int32 end_turn = 7; // 0 if ongoing
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message UpdateChapterSummaryRequest {
+  int32 chapter_id = 1;
+  string summary = 2;
+  int32 end_turn = 3;
+}
+
+message UpdateChapterSummaryResponse {
+  bool success = 1;
+}
+
+// Context Building Messages
+
+message BuildAIContextRequest {
+  string session_id = 1;
+  int32 max_recent_turns = 2; // Number of recent turns to include
+  bool include_lorebook = 3;
+  bool include_state = 4;
+}
+
+message BuildAIContextResponse {
+  AIContext context = 1;
+}
+
+message AIContext {
+  string session_id = 1;
+  string scenario_lore = 2;
+  ProtagonistData protagonist = 3;
+  repeated TurnData recent_turns = 4;
+  google.protobuf.Struct current_state = 5;
+  repeated LorebookEntry lorebook_entries = 6;
+  string chapter_summary = 7;
+}
+
+message LorebookEntry {
+  string entry_id = 1;
+  string entry_type = 2; // character, location, item, organization, etc.
+  string name = 3;
+  string content = 4;
+  CanonLevel canon_level = 5;
+}
+
+enum CanonLevel {
+  CANON_LEVEL_UNSPECIFIED = 0;
+  CANON_LEVEL_RUMOR = 1;
+  CANON_LEVEL_TENTATIVE = 2;
+  CANON_LEVEL_CANON = 3;
+}
+
+// Protagonist Messages
+
+message SetProtagonistRequest {
+  string session_id = 1;
+  ProtagonistData protagonist = 2;
+}
+
+message SetProtagonistResponse {
+  bool success = 1;
+}
+
+message GetProtagonistRequest {
+  string session_id = 1;
+}
+
+message GetProtagonistResponse {
+  ProtagonistData protagonist = 1;
+}
+
+message ProtagonistData {
+  string name = 1;
+  string gender = 2;
+  int32 age = 3;
+  string appearance = 4;
+  string personality = 5;
+  string background = 6;
+  google.protobuf.Struct stats = 7; // Extensible stats (HP, MP, STR, etc.)
+  google.protobuf.Struct extensions = 8; // Plugin-extensible protagonist data
+}

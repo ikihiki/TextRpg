@@ -1,0 +1,299 @@
+syntax = "proto3";
+
+package textrpg.ai;
+
+option csharp_namespace = "TextRpg.AI";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// AI Orchestrator service for narrative generation and AI-related operations.
+// This service routes AI requests, manages context, and sanitizes outputs.
+// AI does NOT modify state directly - it only provides suggestions and narratives.
+service OrchestratorService {
+  // Narrative generation
+  rpc GenerateNarrative(GenerateNarrativeRequest) returns (GenerateNarrativeResponse);
+  rpc GenerateIntro(GenerateIntroRequest) returns (GenerateIntroResponse);
+  rpc GenerateClarification(GenerateClarificationRequest) returns (GenerateClarificationResponse);
+  
+  // Suggestion generation
+  rpc GenerateSuggestion(GenerateSuggestionRequest) returns (GenerateSuggestionResponse);
+  rpc GenerateProtagonist(GenerateProtagonistRequest) returns (GenerateProtagonistResponse);
+  rpc GenerateNoteSuggestions(GenerateNoteSuggestionsRequest) returns (GenerateNoteSuggestionsResponse);
+  
+  // Dialogue and NPC
+  rpc GenerateNPCResponse(GenerateNPCResponseRequest) returns (GenerateNPCResponseResponse);
+  rpc GenerateNPCProfile(GenerateNPCProfileRequest) returns (GenerateNPCProfileResponse);
+  
+  // Summarization
+  rpc GenerateSummary(GenerateSummaryRequest) returns (GenerateSummaryResponse);
+  rpc GenerateRecap(GenerateRecapRequest) returns (GenerateRecapResponse);
+  
+  // Provider health check
+  rpc CheckProviderHealth(CheckProviderHealthRequest) returns (CheckProviderHealthResponse);
+}
+
+// Narrative Generation Messages
+
+message GenerateNarrativeRequest {
+  string session_id = 1;
+  AIContext context = 2;
+  string player_input = 3;
+  NarrativeGenerationSettings settings = 4;
+}
+
+message AIContext {
+  string scenario_id = 1;
+  string scenario_lore = 2;
+  string genre = 3;
+  string tone = 4;
+  ProtagonistContext protagonist = 5;
+  repeated TurnContext recent_turns = 6;
+  google.protobuf.Struct current_state = 7;
+  repeated LorebookContext lorebook_entries = 8;
+  string chapter_summary = 9;
+  google.protobuf.Struct extensions = 10; // Plugin-extensible context
+}
+
+message ProtagonistContext {
+  string name = 1;
+  string gender = 2;
+  int32 age = 3;
+  string appearance = 4;
+  string personality = 5;
+  google.protobuf.Struct stats = 6;
+}
+
+message TurnContext {
+  int32 turn_id = 1;
+  string player_input = 2;
+  string narrative = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message LorebookContext {
+  string entry_id = 1;
+  string entry_type = 2;
+  string name = 3;
+  string content = 4;
+  int32 canon_level = 5;
+}
+
+message NarrativeGenerationSettings {
+  AIDiscretionLevel discretion_level = 1;
+  int32 max_length = 2; // In tokens
+  int32 temperature = 3; // Multiplied by 100
+  string preferred_provider = 4; // cloud, local, or specific provider name
+  bool enable_combat_narration = 5;
+  bool enable_dice_narration = 6;
+}
+
+enum AIDiscretionLevel {
+  AI_DISCRETION_LEVEL_UNSPECIFIED = 0;
+  AI_DISCRETION_LEVEL_STRICT = 1;
+  AI_DISCRETION_LEVEL_BALANCED = 2;
+  AI_DISCRETION_LEVEL_CREATIVE = 3;
+}
+
+message GenerateNarrativeResponse {
+  string narrative = 1;
+  AIProviderInfo provider_info = 2;
+  AIGenerationMetadata metadata = 3;
+}
+
+message AIProviderInfo {
+  string provider_name = 1; // e.g., "openai", "local-llama"
+  string model_name = 2;
+  ProviderType provider_type = 3;
+}
+
+enum ProviderType {
+  PROVIDER_TYPE_UNSPECIFIED = 0;
+  PROVIDER_TYPE_CLOUD = 1;
+  PROVIDER_TYPE_LOCAL = 2;
+}
+
+message AIGenerationMetadata {
+  int32 tokens_used = 1;
+  int32 generation_time_ms = 2;
+  float temperature_used = 3;
+  google.protobuf.Struct additional_info = 4;
+}
+
+message GenerateIntroRequest {
+  string session_id = 1;
+  AIContext context = 2;
+  NarrativeGenerationSettings settings = 3;
+}
+
+message GenerateIntroResponse {
+  string intro_narrative = 1;
+  AIProviderInfo provider_info = 2;
+  AIGenerationMetadata metadata = 3;
+}
+
+message GenerateClarificationRequest {
+  string session_id = 1;
+  AIContext context = 2;
+  string question = 3;
+}
+
+message GenerateClarificationResponse {
+  string clarification = 1;
+  AIProviderInfo provider_info = 2;
+}
+
+// Suggestion Generation Messages
+
+message GenerateSuggestionRequest {
+  string session_id = 1;
+  string context = 2;
+  SuggestionType suggestion_type = 3;
+}
+
+enum SuggestionType {
+  SUGGESTION_TYPE_UNSPECIFIED = 0;
+  SUGGESTION_TYPE_LORE = 1;
+  SUGGESTION_TYPE_CHARACTER = 2;
+  SUGGESTION_TYPE_PLOT = 3;
+  SUGGESTION_TYPE_DIALOGUE = 4;
+  SUGGESTION_TYPE_LOCATION = 5;
+}
+
+message GenerateSuggestionResponse {
+  string suggestion = 1;
+  string reasoning = 2;
+  AIProviderInfo provider_info = 3;
+}
+
+message GenerateProtagonistRequest {
+  string session_id = 1;
+  string scenario_lore = 2;
+  string intro_narrative = 3;
+  string genre = 4;
+}
+
+message GenerateProtagonistResponse {
+  ProtagonistSuggestion protagonist = 1;
+  AIProviderInfo provider_info = 2;
+}
+
+message ProtagonistSuggestion {
+  string name = 1;
+  string gender = 2;
+  int32 age = 3;
+  string appearance = 4;
+  string personality = 5;
+  string background = 6;
+  string reasoning = 7; // Why AI suggested this
+}
+
+message GenerateNoteSuggestionsRequest {
+  string session_id = 1;
+  AIContext context = 2;
+  int32 turn_id = 3;
+  repeated string preferred_types = 4;
+}
+
+message GenerateNoteSuggestionsResponse {
+  repeated NoteSuggestion suggestions = 1;
+  AIProviderInfo provider_info = 2;
+}
+
+message NoteSuggestion {
+  string note_type = 1;
+  string name = 2;
+  string content = 3;
+  int32 suggested_canon_level = 4;
+  string reasoning = 5;
+  float confidence = 6;
+  google.protobuf.Struct structured_data = 7;
+}
+
+// NPC and Dialogue Messages
+
+message GenerateNPCResponseRequest {
+  string session_id = 1;
+  AIContext context = 2;
+  NPCProfile npc_profile = 3;
+  string player_dialogue = 4;
+}
+
+message NPCProfile {
+  string name = 1;
+  string personality = 2;
+  string speech_style = 3;
+  string current_mood = 4;
+  string relationship_to_protagonist = 5;
+  google.protobuf.Struct additional_info = 6;
+}
+
+message GenerateNPCResponseResponse {
+  string npc_dialogue = 1;
+  string narrative_wrapper = 2; // Descriptive text around the dialogue
+  AIProviderInfo provider_info = 3;
+}
+
+message GenerateNPCProfileRequest {
+  string session_id = 1;
+  string context = 2;
+  string npc_name = 3;
+  string role_hint = 4; // e.g., "tavern keeper", "quest giver"
+}
+
+message GenerateNPCProfileResponse {
+  NPCProfile npc_profile = 1;
+  AIProviderInfo provider_info = 2;
+}
+
+// Summarization Messages
+
+message GenerateSummaryRequest {
+  string session_id = 1;
+  SummaryType summary_type = 2;
+  repeated TurnContext turns = 3;
+  int32 max_length = 4; // In tokens
+}
+
+enum SummaryType {
+  SUMMARY_TYPE_UNSPECIFIED = 0;
+  SUMMARY_TYPE_CHAPTER = 1;
+  SUMMARY_TYPE_SESSION = 2;
+  SUMMARY_TYPE_RECENT_EVENTS = 3;
+}
+
+message GenerateSummaryResponse {
+  string summary = 1;
+  AIProviderInfo provider_info = 2;
+}
+
+message GenerateRecapRequest {
+  string session_id = 1;
+  AIContext context = 2;
+  string chapter_summaries = 3;
+  int32 max_length = 4;
+}
+
+message GenerateRecapResponse {
+  string recap = 1;
+  AIProviderInfo provider_info = 2;
+}
+
+// Health Check Messages
+
+message CheckProviderHealthRequest {
+  string provider_name = 1; // Empty for all providers
+}
+
+message CheckProviderHealthResponse {
+  repeated ProviderHealth providers = 1;
+}
+
+message ProviderHealth {
+  string provider_name = 1;
+  ProviderType provider_type = 2;
+  bool is_available = 3;
+  int32 response_time_ms = 4;
+  string status_message = 5;
+  google.protobuf.Timestamp last_checked = 6;
+}

@@ -1,0 +1,271 @@
+syntax = "proto3";
+
+package textrpg.local;
+
+option csharp_namespace = "TextRpg.Local";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Local Gateway service for home PC execution.
+// This service uses bidirectional streaming for the local gateway to
+// receive jobs from the server and send results back.
+// The local gateway maintains an outbound connection to avoid NAT issues.
+service GatewayService {
+  // Bidirectional streaming for job processing
+  rpc WorkStream(stream WorkStreamRequest) returns (stream WorkStreamResponse);
+  
+  // Gateway registration and health
+  rpc RegisterGateway(RegisterGatewayRequest) returns (RegisterGatewayResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc GetGatewayStatus(GetGatewayStatusRequest) returns (GetGatewayStatusResponse);
+  
+  // Capability advertisement
+  rpc AdvertiseCapabilities(AdvertiseCapabilitiesRequest) returns (AdvertiseCapabilitiesResponse);
+  rpc UpdateCapability(UpdateCapabilityRequest) returns (UpdateCapabilityResponse);
+}
+
+// Work Stream Messages (Bidirectional)
+
+message WorkStreamRequest {
+  oneof message {
+    StreamInit init = 1;
+    WorkResult result = 2;
+    WorkProgress progress = 3;
+    WorkError error = 4;
+    StreamHeartbeat heartbeat = 5;
+  }
+}
+
+message StreamInit {
+  string gateway_id = 1;
+  string gateway_name = 2;
+  repeated Capability capabilities = 3;
+  google.protobuf.Struct metadata = 4;
+}
+
+message WorkResult {
+  string job_id = 1;
+  bool success = 2;
+  google.protobuf.Struct result_data = 3;
+  bytes binary_result = 4;
+  string result_url = 5; // If result is uploaded to storage
+  google.protobuf.Timestamp completed_at = 6;
+}
+
+message WorkProgress {
+  string job_id = 1;
+  int32 progress_percentage = 2;
+  string status_message = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message WorkError {
+  string job_id = 1;
+  string error_message = 2;
+  string error_code = 3;
+  bool is_retryable = 4;
+  google.protobuf.Timestamp error_at = 5;
+}
+
+message StreamHeartbeat {
+  google.protobuf.Timestamp timestamp = 1;
+}
+
+message WorkStreamResponse {
+  oneof message {
+    StreamAck ack = 1;
+    WorkAssignment assignment = 2;
+    WorkCancellation cancellation = 3;
+    StreamHeartbeat heartbeat = 4;
+    StreamShutdown shutdown = 5;
+  }
+}
+
+message StreamAck {
+  string message_id = 1;
+  google.protobuf.Timestamp ack_at = 2;
+}
+
+message WorkAssignment {
+  string job_id = 1;
+  WorkType work_type = 2;
+  google.protobuf.Struct payload = 3;
+  int32 timeout_seconds = 4;
+  JobPriority priority = 5;
+  google.protobuf.Timestamp assigned_at = 6;
+}
+
+enum WorkType {
+  WORK_TYPE_UNSPECIFIED = 0;
+  WORK_TYPE_LLM_INFERENCE = 1;
+  WORK_TYPE_IMAGE_GENERATION = 2;
+  WORK_TYPE_AUDIO_GENERATION = 3;
+  WORK_TYPE_CUSTOM = 99;
+}
+
+enum JobPriority {
+  JOB_PRIORITY_UNSPECIFIED = 0;
+  JOB_PRIORITY_LOW = 1;
+  JOB_PRIORITY_NORMAL = 2;
+  JOB_PRIORITY_HIGH = 3;
+  JOB_PRIORITY_CRITICAL = 4;
+}
+
+message WorkCancellation {
+  string job_id = 1;
+  string reason = 2;
+}
+
+message StreamShutdown {
+  string reason = 1;
+  int32 reconnect_delay_seconds = 2;
+}
+
+// Gateway Registration Messages
+
+message RegisterGatewayRequest {
+  string gateway_name = 1;
+  string gateway_version = 2;
+  string user_id = 3; // Owner of the gateway
+  repeated Capability capabilities = 4;
+  google.protobuf.Struct metadata = 5;
+}
+
+message Capability {
+  CapabilityType type = 1;
+  string name = 2;
+  string version = 3;
+  bool is_available = 4;
+  google.protobuf.Struct configuration = 5; // Model info, GPU specs, etc.
+}
+
+enum CapabilityType {
+  CAPABILITY_TYPE_UNSPECIFIED = 0;
+  CAPABILITY_TYPE_LLM = 1;
+  CAPABILITY_TYPE_IMAGE_GEN = 2;
+  CAPABILITY_TYPE_AUDIO_GEN = 3;
+  CAPABILITY_TYPE_VIDEO_GEN = 4;
+  CAPABILITY_TYPE_CUSTOM = 99;
+}
+
+message RegisterGatewayResponse {
+  string gateway_id = 1;
+  string access_token = 2; // For authentication
+  google.protobuf.Timestamp registered_at = 3;
+}
+
+message HeartbeatRequest {
+  string gateway_id = 1;
+  GatewayStatus status = 2;
+  repeated Capability current_capabilities = 3;
+}
+
+message GatewayStatus {
+  bool is_active = 1;
+  int32 active_jobs = 2;
+  int32 queued_jobs = 3;
+  ResourceUsage resource_usage = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message ResourceUsage {
+  float cpu_usage_percent = 1;
+  float memory_usage_percent = 2;
+  float gpu_usage_percent = 3;
+  float disk_usage_percent = 4;
+}
+
+message HeartbeatResponse {
+  bool acknowledged = 1;
+  int32 next_heartbeat_seconds = 2;
+  repeated string pending_job_ids = 3;
+}
+
+message GetGatewayStatusRequest {
+  string gateway_id = 1;
+}
+
+message GetGatewayStatusResponse {
+  string gateway_id = 1;
+  string gateway_name = 2;
+  GatewayConnectionStatus connection_status = 3;
+  GatewayStatus status = 4;
+  repeated Capability capabilities = 5;
+  google.protobuf.Timestamp last_seen = 6;
+}
+
+enum GatewayConnectionStatus {
+  GATEWAY_CONNECTION_STATUS_UNSPECIFIED = 0;
+  GATEWAY_CONNECTION_STATUS_CONNECTED = 1;
+  GATEWAY_CONNECTION_STATUS_DISCONNECTED = 2;
+  GATEWAY_CONNECTION_STATUS_RECONNECTING = 3;
+  GATEWAY_CONNECTION_STATUS_ERROR = 4;
+}
+
+// Capability Management Messages
+
+message AdvertiseCapabilitiesRequest {
+  string gateway_id = 1;
+  repeated Capability capabilities = 2;
+}
+
+message AdvertiseCapabilitiesResponse {
+  bool success = 1;
+  repeated string accepted_capability_ids = 2;
+}
+
+message UpdateCapabilityRequest {
+  string gateway_id = 1;
+  string capability_id = 2;
+  bool is_available = 3;
+  google.protobuf.Struct configuration = 4;
+}
+
+message UpdateCapabilityResponse {
+  bool success = 1;
+}
+
+// LLM-specific messages (example payload)
+message LLMInferencePayload {
+  string prompt = 1;
+  string model_name = 2;
+  int32 max_tokens = 3;
+  float temperature = 4;
+  float top_p = 5;
+  int32 top_k = 6;
+  repeated string stop_sequences = 7;
+  google.protobuf.Struct additional_params = 8;
+}
+
+message LLMInferenceResult {
+  string generated_text = 1;
+  int32 tokens_generated = 2;
+  int32 tokens_in_prompt = 3;
+  int32 generation_time_ms = 4;
+  string model_used = 5;
+}
+
+// Image generation-specific messages (example payload)
+message ImageGenerationPayload {
+  string prompt = 1;
+  string negative_prompt = 2;
+  string model_name = 3;
+  int32 width = 4;
+  int32 height = 5;
+  int32 steps = 6;
+  float cfg_scale = 7;
+  int32 seed = 8;
+  google.protobuf.Struct additional_params = 9;
+}
+
+message ImageGenerationResult {
+  bytes image_data = 1;
+  string image_url = 2; // If uploaded
+  string format = 3; // e.g., "png", "jpeg"
+  int32 width = 4;
+  int32 height = 5;
+  int32 generation_time_ms = 6;
+  string model_used = 7;
+  int32 seed_used = 8;
+}

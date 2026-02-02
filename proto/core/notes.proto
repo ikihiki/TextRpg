@@ -1,0 +1,314 @@
+syntax = "proto3";
+
+package textrpg.core;
+
+option csharp_namespace = "TextRpg.Core";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Core Backend service for managing Canonical Notes (Lorebook).
+// This service handles structured knowledge management for consistent AI generation.
+service NotesService {
+  // Note entry management
+  rpc CreateNote(CreateNoteRequest) returns (CreateNoteResponse);
+  rpc GetNote(GetNoteRequest) returns (GetNoteResponse);
+  rpc UpdateNote(UpdateNoteRequest) returns (UpdateNoteResponse);
+  rpc DeleteNote(DeleteNoteRequest) returns (DeleteNoteResponse);
+  rpc ListNotes(ListNotesRequest) returns (ListNotesResponse);
+  
+  // Note search and filtering
+  rpc SearchNotes(SearchNotesRequest) returns (SearchNotesResponse);
+  rpc GetRelatedNotes(GetRelatedNotesRequest) returns (GetRelatedNotesResponse);
+  
+  // Note suggestions from AI
+  rpc GetNoteSuggestion(GetNoteSuggestionRequest) returns (GetNoteSuggestionResponse);
+  rpc ApplyNoteSuggestion(ApplyNoteSuggestionRequest) returns (ApplyNoteSuggestionResponse);
+  
+  // Note organization
+  rpc CreateNoteThread(CreateNoteThreadRequest) returns (CreateNoteThreadResponse);
+  rpc LinkNotes(LinkNotesRequest) returns (LinkNotesResponse);
+  rpc PinNote(PinNoteRequest) returns (PinNoteResponse);
+  rpc AnchorNote(AnchorNoteRequest) returns (AnchorNoteResponse);
+}
+
+// Note Entry Messages
+
+message CreateNoteRequest {
+  string session_id = 1;
+  NoteType note_type = 2;
+  string name = 3;
+  string content = 4;
+  CanonLevel canon_level = 5;
+  int32 first_turn_id = 6; // Turn where this was first mentioned
+  google.protobuf.Struct structured_data = 7; // Type-specific structured fields
+  google.protobuf.Struct extensions = 8; // Plugin-extensible note data
+}
+
+enum NoteType {
+  NOTE_TYPE_UNSPECIFIED = 0;
+  NOTE_TYPE_CHARACTER = 1;
+  NOTE_TYPE_LOCATION = 2;
+  NOTE_TYPE_ITEM = 3;
+  NOTE_TYPE_ORGANIZATION = 4;
+  NOTE_TYPE_EVENT = 5;
+  NOTE_TYPE_LORE = 6;
+  NOTE_TYPE_RULE = 7;
+  NOTE_TYPE_CUSTOM = 99;
+}
+
+enum CanonLevel {
+  CANON_LEVEL_UNSPECIFIED = 0;
+  CANON_LEVEL_RUMOR = 1;       // Unverified information, may be false
+  CANON_LEVEL_TENTATIVE = 2;   // Likely true but not confirmed
+  CANON_LEVEL_CANON = 3;       // Confirmed truth, AI must follow
+}
+
+message CreateNoteResponse {
+  string note_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+message GetNoteRequest {
+  string note_id = 1;
+}
+
+message GetNoteResponse {
+  NoteData note = 1;
+}
+
+message NoteData {
+  string note_id = 1;
+  string session_id = 2;
+  NoteType note_type = 3;
+  string name = 4;
+  string content = 5;
+  repeated string aliases = 6;
+  CanonLevel canon_level = 7;
+  bool is_pinned = 8; // PIN: Always included in AI context
+  bool is_anchored = 9; // ANCHOR: Core immutable facts
+  int32 first_turn_id = 10;
+  int32 last_updated_turn_id = 11;
+  google.protobuf.Struct structured_data = 12;
+  google.protobuf.Struct extensions = 13;
+  repeated string tag_ids = 14;
+  repeated string thread_ids = 15;
+  string evidence_turn_ids = 16; // Comma-separated turn IDs as evidence
+  google.protobuf.Timestamp created_at = 17;
+  google.protobuf.Timestamp updated_at = 18;
+}
+
+message UpdateNoteRequest {
+  string note_id = 1;
+  string name = 2;
+  string content = 3;
+  repeated string aliases = 4;
+  CanonLevel canon_level = 5;
+  google.protobuf.Struct structured_data = 6;
+  google.protobuf.Struct extensions = 7;
+  int32 last_updated_turn_id = 8;
+}
+
+message UpdateNoteResponse {
+  bool success = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}
+
+message DeleteNoteRequest {
+  string note_id = 1;
+  bool soft_delete = 2; // If true, mark as deleted instead of removing
+}
+
+message DeleteNoteResponse {
+  bool success = 1;
+}
+
+message ListNotesRequest {
+  string session_id = 1;
+  NoteType type_filter = 2;
+  CanonLevel min_canon_level = 3;
+  bool pinned_only = 4;
+  int32 page = 5;
+  int32 page_size = 6;
+  string order_by = 7;
+}
+
+message ListNotesResponse {
+  repeated NoteData notes = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+// Search and Related Notes Messages
+
+message SearchNotesRequest {
+  string session_id = 1;
+  string query = 2;
+  repeated NoteType type_filter = 3;
+  CanonLevel min_canon_level = 4;
+  int32 max_results = 5;
+}
+
+message SearchNotesResponse {
+  repeated NoteSearchResult results = 1;
+}
+
+message NoteSearchResult {
+  NoteData note = 1;
+  float relevance_score = 2;
+  repeated string matching_snippets = 3;
+}
+
+message GetRelatedNotesRequest {
+  string note_id = 1;
+  int32 max_results = 2;
+}
+
+message GetRelatedNotesResponse {
+  repeated NoteData related_notes = 1;
+}
+
+// AI Suggestion Messages
+
+message GetNoteSuggestionRequest {
+  string session_id = 1;
+  int32 turn_id = 2; // Analyze this turn for note suggestions
+  repeated NoteType preferred_types = 3;
+}
+
+message GetNoteSuggestionResponse {
+  repeated NoteSuggestion suggestions = 1;
+}
+
+message NoteSuggestion {
+  string suggestion_id = 1;
+  NoteType note_type = 2;
+  string name = 3;
+  string content = 4;
+  CanonLevel suggested_canon_level = 5;
+  string reasoning = 6; // Why AI suggests this
+  float confidence = 7; // 0.0 to 1.0
+  google.protobuf.Struct structured_data = 8;
+}
+
+message ApplyNoteSuggestionRequest {
+  string suggestion_id = 1;
+  bool accept = 2; // True to accept, false to reject
+  string note_id = 3; // If updating existing note instead of creating new
+  string modified_content = 4; // User-modified content if not accepting as-is
+}
+
+message ApplyNoteSuggestionResponse {
+  bool success = 1;
+  string note_id = 2; // ID of created or updated note
+}
+
+// Note Organization Messages
+
+message CreateNoteThreadRequest {
+  string session_id = 1;
+  string thread_name = 2;
+  string description = 3;
+  repeated string initial_note_ids = 4;
+}
+
+message CreateNoteThreadResponse {
+  string thread_id = 1;
+}
+
+message LinkNotesRequest {
+  string source_note_id = 1;
+  string target_note_id = 2;
+  LinkType link_type = 3;
+  string description = 4;
+}
+
+enum LinkType {
+  LINK_TYPE_UNSPECIFIED = 0;
+  LINK_TYPE_RELATED = 1;
+  LINK_TYPE_PARENT = 2;
+  LINK_TYPE_CHILD = 3;
+  LINK_TYPE_ALLY = 4;
+  LINK_TYPE_ENEMY = 5;
+  LINK_TYPE_OWNS = 6;
+  LINK_TYPE_BELONGS_TO = 7;
+  LINK_TYPE_LOCATED_IN = 8;
+}
+
+message LinkNotesResponse {
+  bool success = 1;
+}
+
+message PinNoteRequest {
+  string note_id = 1;
+  bool pin = 2; // True to pin, false to unpin
+}
+
+message PinNoteResponse {
+  bool success = 1;
+}
+
+message AnchorNoteRequest {
+  string note_id = 1;
+  bool anchor = 2; // True to anchor, false to unanchor
+}
+
+message AnchorNoteResponse {
+  bool success = 1;
+}
+
+// Character-specific structured data (example)
+message CharacterNoteData {
+  string full_name = 1;
+  repeated string aliases = 2;
+  string gender = 3;
+  int32 age = 4;
+  string appearance = 5;
+  string speech_style = 6; // Tone, dialect, verbal tics
+  string personality = 7;
+  string role = 8; // Occupation, title
+  repeated Relationship relationships = 9;
+  string current_status = 10; // Health, location, emotional state
+  google.protobuf.Struct abilities = 11; // Skills, powers
+}
+
+message Relationship {
+  string other_note_id = 1; // Reference to another character note
+  string other_name = 2;
+  string relationship_type = 3; // friend, enemy, family, etc.
+  string description = 4;
+}
+
+// Location-specific structured data (example)
+message LocationNoteData {
+  string full_name = 1;
+  repeated string aliases = 2;
+  LocationType location_type = 3;
+  string parent_location_id = 4; // For nested locations
+  string description = 5;
+  string atmosphere = 6; // Mood, sounds, smells
+  repeated string notable_npcs = 7;
+  repeated string notable_features = 8;
+  string rules = 9; // Local laws, restrictions
+  DangerLevel danger_level = 10;
+}
+
+enum LocationType {
+  LOCATION_TYPE_UNSPECIFIED = 0;
+  LOCATION_TYPE_CITY = 1;
+  LOCATION_TYPE_VILLAGE = 2;
+  LOCATION_TYPE_DUNGEON = 3;
+  LOCATION_TYPE_WILDERNESS = 4;
+  LOCATION_TYPE_BUILDING = 5;
+  LOCATION_TYPE_ROOM = 6;
+}
+
+enum DangerLevel {
+  DANGER_LEVEL_UNSPECIFIED = 0;
+  DANGER_LEVEL_SAFE = 1;
+  DANGER_LEVEL_LOW = 2;
+  DANGER_LEVEL_MEDIUM = 3;
+  DANGER_LEVEL_HIGH = 4;
+  DANGER_LEVEL_EXTREME = 5;
+}
