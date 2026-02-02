@@ -637,9 +637,15 @@ sequenceDiagram
 
 ### 観点
 - **誰が**: システム（プログラム）、プレイヤー（選択入力）
-- **目的**: バトル・判定・強制イベント等をプログラムで確実に処理し、公平性と再現性を保つ
-- **操作**: ボタン操作による行動選択 → プログラム判定 → AI演出生成
+- **目的**: 拡張機能が定義したルールに基づいてプログラムで確実に処理し、公平性と再現性を保つ
+- **操作**: 拡張機能が設定したUI要素による入力 → プログラム判定 → AI演出生成
 - **結果**: ルールに基づいた結果が確定し、AIは演出のみを担当する
+
+### 設計方針
+- **拡張可能なアーキテクチャ**: プログラム主導モードの具体的な機能（バトル、判定、イベント等）は拡張機能として実装される
+- **UI要素の動的構成**: 拡張機能がUI要素（ボタン、選択肢、表示パネル等）を定義し、Core/BFF経由でFrontendに配信する
+- **ユーザー入力のルーティング**: ユーザー入力はCore経由で拡張機能が処理ロジックを担当する
+- **汎用インターフェース**: Core/BFF/Frontendは拡張機能に依存しない汎用APIを提供する
 
 ### シーケンスダイアグラム（US-PG01〜US-PG10）
 
@@ -650,82 +656,94 @@ sequenceDiagram
     participant Frontend as Web Frontend
     participant BFF as BFF Gateway
     participant Core as Core Backend
-    participant Rules as Rules Engine
+    participant Ext as Extension (拡張機能)
     participant AI as AI Orchestrator
     participant DB as Database
 
-    %% US-PG01: Forced Mode開始
-    Note over Core: バトル/判定/強制イベント発生
-    Core->>DB: UPDATE Session.Mode = Forced
-    Core-->>BFF: ModeChange(Forced, reason)
-    BFF-->>Frontend: ModeChange通知
+    %% US-PG01: プログラム主導モード開始
+    Note over Core, Ext: 拡張機能がモード開始をトリガー
+    Ext->>Core: RequestModeChange(extensionId, modeConfig)
+    Core->>DB: UPDATE Session.Mode = ProgramDriven
+    Core->>DB: UPDATE Session.ActiveExtension = extensionId
+    Core-->>BFF: ModeChange(ProgramDriven, extensionId, uiSchema)
+    BFF-->>Frontend: ModeChange通知 + UI定義
     Frontend->>Frontend: 自由入力を無効化
-    Frontend-->>Player: 「バトル中」等のモード表示
+    Frontend->>Frontend: 拡張機能が定義したUIを構築
+    Frontend-->>Player: 拡張機能のモード名・UI表示
 
-    %% US-PG02, US-PG03: バトルシーン（ボタン操作）
-    Note over Player, Rules: バトル進行ループ
-    loop バトルターン
-        Frontend-->>Player: 行動ボタン表示（攻撃/防御/スキル/逃走）
-        Player->>Frontend: 行動ボタンを選択
-        Frontend->>BFF: SubmitBattleAction(sessionId, action)
-        BFF->>Core: ProcessBattleAction RPC
+    %% US-PG02, US-PG03: 拡張機能主導の進行ループ
+    Note over Player, Ext: 拡張機能が定義した進行ループ
+    loop 拡張機能の進行単位
+        Ext->>Core: UpdateUIRequest(uiElements)
+        Note over Ext: 拡張機能がボタン・選択肢・表示を定義
+        Core-->>BFF: UIUpdate(uiElements)
+        BFF-->>Frontend: UI更新通知
+        Frontend-->>Player: 拡張機能が設定したUIを表示
+        Player->>Frontend: UI要素を操作（ボタン押下、選択等）
+        Frontend->>BFF: SubmitExtensionInput(sessionId, extensionId, inputData)
+        BFF->>Core: ProcessExtensionInput RPC
         
-        Core->>Rules: CalculateBattleResult(action, state)
-        Rules->>Rules: 命中判定・ダメージ計算・状態変化
-        Rules-->>Core: BattleResult (hit, damage, effects)
+        Core->>Ext: HandleInput(inputData, sessionState)
+        Ext->>Ext: 拡張機能固有のロジック実行
+        Ext-->>Core: ExtensionResult (stateChanges, outcome)
         
-        Core->>DB: UPDATE SessionState (HP, status)
+        Core->>DB: UPDATE SessionState (拡張機能が指定した変更)
         DB-->>Core: OK
         
         %% US-PG07: AI演出生成
-        Core->>AI: GenerateBattleNarrative(result, context)
+        Core->>AI: GenerateNarrative(extensionResult, context)
         AI->>AI: 結果を元に描写・心情・演出生成
         Note over AI: AIは結果を変更しない
-        AI-->>Core: BattleNarrative
+        AI-->>Core: Narrative
         
-        Core->>DB: INSERT Turn (action, result, narrative)
-        Core-->>BFF: BattleNarrative, CurrentState
-        BFF-->>Frontend: バトル結果と演出
-        Frontend-->>Player: 結果表示（ダメージ、状態変化、演出）
+        Core->>DB: INSERT Turn (input, result, narrative)
+        Core-->>BFF: Narrative, CurrentState
+        BFF-->>Frontend: 結果と演出
+        Frontend-->>Player: 拡張機能が定義した形式で結果表示
     end
 
-    %% US-PG04, US-PG05: ダイス判定
-    Note over Player, Rules: 能力判定シーン
+    %% US-PG04, US-PG05: 拡張機能による判定処理
+    Note over Player, Ext: 拡張機能が定義した判定シーン
+    Ext->>Core: RequestCheckUI(checkConfig)
+    Core-->>BFF: ShowCheckUI(checkConfig)
+    BFF-->>Frontend: 判定UI定義
     Frontend-->>Player: 判定UIを表示
-    Player->>Frontend: 「ダイスを振る」ボタンを押す
-    Frontend->>BFF: RollDice(sessionId, checkType)
-    BFF->>Core: ProcessDiceRoll RPC
+    Player->>Frontend: 判定アクションを実行
+    Frontend->>BFF: SubmitExtensionInput(sessionId, extensionId, checkAction)
+    BFF->>Core: ProcessExtensionInput RPC
     
-    Core->>Rules: RollDice(diceType, modifiers)
-    Rules->>Rules: 乱数生成・判定
-    Rules-->>Core: DiceResult (roll, success/fail)
+    Core->>Ext: ExecuteCheck(checkAction, modifiers)
+    Ext->>Ext: 拡張機能固有の判定ロジック
+    Ext-->>Core: CheckResult (outcome, details)
     
     Core->>DB: UPDATE SessionState (based on result)
     
     %% 分岐処理
     alt 成功
-        Core->>AI: GenerateSuccessNarrative(context)
+        Core->>AI: GenerateOutcomeNarrative(context, success=true)
         AI-->>Core: SuccessNarrative
     else 失敗
-        Core->>AI: GenerateFailureNarrative(context)
+        Core->>AI: GenerateOutcomeNarrative(context, success=false)
         AI-->>Core: FailureNarrative
     end
     
     Core->>DB: INSERT Turn
-    Core-->>BFF: DiceResult, Narrative
-    BFF-->>Frontend: ダイス結果と演出
-    Frontend-->>Player: ダイス結果を視覚的に表示
+    Core-->>BFF: CheckResult, Narrative
+    BFF-->>Frontend: 判定結果と演出
+    Frontend-->>Player: 拡張機能が定義した形式で結果表示
 
-    %% US-PG06: 強制イベント
-    Note over Core: 強制イベント発生（崩落・逮捕等）
+    %% US-PG06: 強制イベント（拡張機能主導）
+    Note over Core, Ext: 拡張機能が強制イベントを発火
+    Ext->>Core: TriggerForcedEvent(eventConfig)
     Core->>DB: UPDATE Session.Mode = ForcedEvent
-    Core-->>BFF: ForcedEventStart(eventType)
+    Core-->>BFF: ForcedEventStart(extensionId, eventType)
     BFF-->>Frontend: 強制イベント開始通知
     Frontend->>Frontend: 自由入力・分岐選択を非表示
     Frontend-->>Player: 「制御不能な状況」を明示
     
     loop イベント進行
-        Core->>AI: GenerateForcedEventNarrative(eventStep)
+        Ext->>Core: AdvanceEvent(eventStep)
+        Core->>AI: GenerateEventNarrative(eventStep, context)
         AI-->>Core: EventNarrative
         Core->>DB: INSERT Turn
         Core-->>BFF: EventNarrative
@@ -734,7 +752,9 @@ sequenceDiagram
     end
 
     %% US-PG08, US-PG09: モード復帰
+    Ext->>Core: RequestModeReturn()
     Core->>DB: UPDATE Session.Mode = AIDialogue
+    Core->>DB: UPDATE Session.ActiveExtension = null
     Core-->>BFF: ModeChange(AIDialogue)
     BFF-->>Frontend: モード復帰通知
     Frontend->>Frontend: 自由入力を再有効化
@@ -742,12 +762,12 @@ sequenceDiagram
 
     %% US-PG10: テスト実行
     Note over Player: シナリオ作者によるテスト
-    Player->>Frontend: 特定イベント/バトルからテスト実行
-    Frontend->>BFF: TestProgramDrivenScene(sceneId, fixedValues?)
+    Player->>Frontend: 拡張機能シーンをテスト実行
+    Frontend->>BFF: TestExtensionScene(extensionId, sceneId, testConfig)
     BFF->>Core: TestScene RPC
-    Core->>Rules: Execute with fixedValues (再現用)
-    Rules-->>Core: TestResult
-    Core->>AI: GenerateTestNarrative
+    Core->>Ext: ExecuteTest(sceneId, testConfig)
+    Ext-->>Core: TestResult
+    Core->>AI: GenerateNarrative(testResult, context)
     AI-->>Core: TestNarrative
     Core-->>BFF: TestResult, Narrative
     BFF-->>Frontend: テスト結果
@@ -1166,7 +1186,7 @@ sequenceDiagram
 | **BFF Gateway** | gRPC-Web終端、認証・認可を担当 |
 | **Core Backend** | Session/Notes/State管理、Single Source of Truth |
 | **AI Orchestrator** | AI Router/Context Builder/Sanitizer |
-| **Rules Engine** | 戦闘・ダイス・判定の決定論的処理 |
+| **Extension (拡張機能)** | プラグイン形式の拡張機能。UI要素定義・入力処理・ルール実行を担当 |
 | **Hangfire Jobs** | 非同期ジョブ（挿絵生成、ノート抽出、要約更新） |
 | **Database** | PostgreSQL（メインDB） |
 | **Local Gateway** | 自宅PC側のローカルAI実行環境（オプション） |
