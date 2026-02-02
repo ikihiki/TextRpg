@@ -1,0 +1,376 @@
+syntax = "proto3";
+
+package textrpg.bff;
+
+option csharp_namespace = "TextRpg.Bff";
+
+import "google/protobuf/timestamp.proto";
+
+// BFF Gateway service for frontend communication via gRPC-Web.
+// This service acts as the edge gateway for browser clients.
+service GameApi {
+  // Scenario management
+  rpc CreateScenario(CreateScenarioRequest) returns (CreateScenarioResponse);
+  rpc ListScenarios(ListScenariosRequest) returns (ListScenariosResponse);
+  rpc GetScenario(GetScenarioRequest) returns (GetScenarioResponse);
+  rpc UpdateScenarioSettings(UpdateScenarioSettingsRequest) returns (UpdateScenarioSettingsResponse);
+  rpc UpdateLore(UpdateLoreRequest) returns (UpdateLoreResponse);
+  rpc UpdateAISettings(UpdateAISettingsRequest) returns (UpdateAISettingsResponse);
+  rpc UpdateIllustrationConfig(UpdateIllustrationConfigRequest) returns (UpdateIllustrationConfigResponse);
+  rpc GetAISuggestion(GetAISuggestionRequest) returns (GetAISuggestionResponse);
+  
+  // Session management
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc StartSession(StartSessionRequest) returns (StartSessionResponse);
+  rpc ResumeSession(ResumeSessionRequest) returns (ResumeSessionResponse);
+  rpc PauseSession(PauseSessionRequest) returns (PauseSessionResponse);
+  rpc GetSessionSummary(GetSessionSummaryRequest) returns (GetSessionSummaryResponse);
+  rpc GetSessionWarnings(GetSessionWarningsRequest) returns (GetSessionWarningsResponse);
+  
+  // Gameplay - Player input and narrative generation
+  rpc SubmitPlayerInput(SubmitPlayerInputRequest) returns (SubmitPlayerInputResponse);
+  rpc RequestClarification(RequestClarificationRequest) returns (RequestClarificationResponse);
+  rpc RewindToTurn(RewindToTurnRequest) returns (RewindToTurnResponse);
+  rpc GetLastTurn(GetLastTurnRequest) returns (GetLastTurnResponse);
+  rpc GetSessionLog(GetSessionLogRequest) returns (GetSessionLogResponse);
+  
+  // Protagonist management
+  rpc SetProtagonist(SetProtagonistRequest) returns (SetProtagonistResponse);
+  rpc GetProtagonistSuggestion(GetProtagonistSuggestionRequest) returns (GetProtagonistSuggestionResponse);
+}
+
+// Scenario Messages
+
+message CreateScenarioRequest {
+  string title = 1;
+  string summary = 2;
+  string user_id = 3;
+}
+
+message CreateScenarioResponse {
+  string scenario_id = 1;
+}
+
+message ListScenariosRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListScenariosResponse {
+  repeated ScenarioSummary scenarios = 1;
+  int32 total_count = 2;
+}
+
+message ScenarioSummary {
+  string scenario_id = 1;
+  string title = 2;
+  string summary = 3;
+  ScenarioStatus status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+enum ScenarioStatus {
+  SCENARIO_STATUS_UNSPECIFIED = 0;
+  SCENARIO_STATUS_DRAFT = 1;
+  SCENARIO_STATUS_PUBLISHED = 2;
+  SCENARIO_STATUS_ARCHIVED = 3;
+}
+
+message GetScenarioRequest {
+  string scenario_id = 1;
+}
+
+message GetScenarioResponse {
+  Scenario scenario = 1;
+}
+
+message Scenario {
+  string scenario_id = 1;
+  string title = 2;
+  string summary = 3;
+  ScenarioStatus status = 4;
+  string genre = 5;
+  string tone = 6;
+  string lore = 7;
+  AISettings ai_settings = 8;
+  IllustrationConfig illustration_config = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message UpdateScenarioSettingsRequest {
+  string scenario_id = 1;
+  string genre = 2;
+  string tone = 3;
+}
+
+message UpdateScenarioSettingsResponse {
+  bool success = 1;
+}
+
+message UpdateLoreRequest {
+  string scenario_id = 1;
+  string lore_text = 2;
+}
+
+message UpdateLoreResponse {
+  bool success = 1;
+}
+
+message UpdateAISettingsRequest {
+  string scenario_id = 1;
+  AISettings ai_settings = 2;
+}
+
+message UpdateAISettingsResponse {
+  bool success = 1;
+}
+
+message AISettings {
+  AIDiscretionLevel discretion_level = 1;
+  string model_preference = 2;
+  // Temperature multiplied by 100 for cross-language compatibility and to avoid floating point precision issues
+  // (e.g., 70 = 0.70, 100 = 1.00). This ensures consistent representation across all platforms.
+  int32 temperature = 3;
+  int32 max_tokens = 4;
+}
+
+enum AIDiscretionLevel {
+  AI_DISCRETION_LEVEL_UNSPECIFIED = 0;
+  AI_DISCRETION_LEVEL_STRICT = 1;  // AI follows rules strictly
+  AI_DISCRETION_LEVEL_BALANCED = 2; // AI has some freedom
+  AI_DISCRETION_LEVEL_CREATIVE = 3; // AI has high creative freedom
+}
+
+message UpdateIllustrationConfigRequest {
+  string scenario_id = 1;
+  IllustrationConfig illustration_config = 2;
+}
+
+message UpdateIllustrationConfigResponse {
+  bool success = 1;
+}
+
+message IllustrationConfig {
+  bool enabled = 1;
+  string style = 2;
+  string mood = 3;
+  string negative_prompt = 4;
+  int32 generation_frequency = 5; // Every N turns
+}
+
+message GetAISuggestionRequest {
+  string scenario_id = 1;
+  string context = 2;
+  SuggestionType suggestion_type = 3;
+}
+
+enum SuggestionType {
+  SUGGESTION_TYPE_UNSPECIFIED = 0;
+  SUGGESTION_TYPE_LORE = 1;
+  SUGGESTION_TYPE_CHARACTER = 2;
+  SUGGESTION_TYPE_PLOT = 3;
+}
+
+message GetAISuggestionResponse {
+  string suggestion = 1;
+}
+
+// Session Messages
+
+message CreateSessionRequest {
+  string scenario_id = 1;
+  string user_id = 2;
+}
+
+message CreateSessionResponse {
+  string session_id = 1;
+}
+
+message ListSessionsRequest {
+  string user_id = 1;
+  SessionStatus status_filter = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message ListSessionsResponse {
+  repeated SessionSummary sessions = 1;
+  int32 total_count = 2;
+}
+
+message SessionSummary {
+  string session_id = 1;
+  string scenario_id = 2;
+  string scenario_title = 3;
+  SessionStatus status = 4;
+  int32 turn_count = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp last_played_at = 7;
+}
+
+enum SessionStatus {
+  SESSION_STATUS_UNSPECIFIED = 0;
+  SESSION_STATUS_PREPARING = 1; // Waiting for protagonist setup
+  SESSION_STATUS_ACTIVE = 2;    // Currently playing
+  SESSION_STATUS_PAUSED = 3;    // Temporarily paused
+  SESSION_STATUS_COMPLETED = 4; // Story completed
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+}
+
+message Session {
+  string session_id = 1;
+  string scenario_id = 2;
+  string user_id = 3;
+  SessionStatus status = 4;
+  Protagonist protagonist = 5;
+  int32 current_turn = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp last_played_at = 8;
+}
+
+message Protagonist {
+  string name = 1;
+  string gender = 2;
+  int32 age = 3;
+  string appearance = 4;
+  string personality = 5;
+  string background = 6;
+}
+
+message StartSessionRequest {
+  string session_id = 1;
+}
+
+message StartSessionResponse {
+  string first_narrative = 1;
+  SessionStatus status = 2;
+}
+
+message ResumeSessionRequest {
+  string session_id = 1;
+}
+
+message ResumeSessionResponse {
+  bool success = 1;
+}
+
+message PauseSessionRequest {
+  string session_id = 1;
+}
+
+message PauseSessionResponse {
+  bool success = 1;
+}
+
+message GetSessionSummaryRequest {
+  string session_id = 1;
+}
+
+message GetSessionSummaryResponse {
+  string recap_summary = 1;
+  repeated ChapterSummary chapters = 2;
+}
+
+message ChapterSummary {
+  int32 chapter_number = 1;
+  string title = 2;
+  string summary = 3;
+  int32 start_turn = 4;
+  int32 end_turn = 5;
+}
+
+message GetSessionWarningsRequest {
+  string session_id = 1;
+}
+
+message GetSessionWarningsResponse {
+  repeated string warnings = 1;
+}
+
+// Gameplay Messages
+
+message SubmitPlayerInputRequest {
+  string session_id = 1;
+  string input_text = 2;
+}
+
+message SubmitPlayerInputResponse {
+  string narrative = 1;
+  int32 turn_id = 2;
+}
+
+message RequestClarificationRequest {
+  string session_id = 1;
+  string question = 2;
+}
+
+message RequestClarificationResponse {
+  string clarification_text = 1;
+}
+
+message RewindToTurnRequest {
+  string session_id = 1;
+  int32 target_turn_id = 2;
+}
+
+message RewindToTurnResponse {
+  bool success = 1;
+}
+
+message GetLastTurnRequest {
+  string session_id = 1;
+}
+
+message GetLastTurnResponse {
+  Turn last_turn = 1;
+}
+
+message Turn {
+  int32 turn_id = 1;
+  string player_input = 2;
+  string narrative = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message GetSessionLogRequest {
+  string session_id = 1;
+  bool read_only = 2;
+  int32 from_turn = 3;
+  int32 to_turn = 4;
+}
+
+message GetSessionLogResponse {
+  repeated Turn turns = 1;
+}
+
+// Protagonist Messages
+
+message SetProtagonistRequest {
+  string session_id = 1;
+  Protagonist protagonist = 2;
+}
+
+message SetProtagonistResponse {
+  bool success = 1;
+}
+
+message GetProtagonistSuggestionRequest {
+  string session_id = 1;
+  string intro_narrative = 2;
+}
+
+message GetProtagonistSuggestionResponse {
+  Protagonist suggested_protagonist = 1;
+}

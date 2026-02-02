@@ -1,0 +1,213 @@
+syntax = "proto3";
+
+package textrpg.core;
+
+option csharp_namespace = "TextRpg.Core";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Core Backend service for managing assets (illustrations, audio, etc.).
+// This service handles Visual Canon and generated media.
+service AssetService {
+  // Asset management
+  rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse);
+  rpc GetAsset(GetAssetRequest) returns (GetAssetResponse);
+  rpc ListAssets(ListAssetsRequest) returns (ListAssetsResponse);
+  rpc DeleteAsset(DeleteAssetRequest) returns (DeleteAssetResponse);
+  
+  // Illustration-specific operations
+  rpc RequestIllustration(RequestIllustrationRequest) returns (RequestIllustrationResponse);
+  rpc GetIllustrationStatus(GetIllustrationStatusRequest) returns (GetIllustrationStatusResponse);
+  rpc UpdateVisualCanon(UpdateVisualCanonRequest) returns (UpdateVisualCanonResponse);
+  rpc GetVisualCanon(GetVisualCanonRequest) returns (GetVisualCanonResponse);
+}
+
+// Asset Messages
+
+message CreateAssetRequest {
+  string session_id = 1;
+  AssetType asset_type = 2;
+  string name = 3;
+  string description = 4;
+  bytes asset_data = 5; // Binary asset data
+  string mime_type = 6;
+  int32 associated_turn_id = 7;
+  google.protobuf.Struct metadata = 8;
+}
+
+enum AssetType {
+  ASSET_TYPE_UNSPECIFIED = 0;
+  ASSET_TYPE_ILLUSTRATION = 1;
+  ASSET_TYPE_PORTRAIT = 2;
+  ASSET_TYPE_BACKGROUND = 3;
+  ASSET_TYPE_AUDIO = 4;
+  ASSET_TYPE_OTHER = 99;
+}
+
+message CreateAssetResponse {
+  string asset_id = 1;
+  string asset_url = 2; // URL to access the asset
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message GetAssetRequest {
+  string asset_id = 1;
+}
+
+message GetAssetResponse {
+  AssetData asset = 1;
+}
+
+message AssetData {
+  string asset_id = 1;
+  string session_id = 2;
+  AssetType asset_type = 3;
+  string name = 4;
+  string description = 5;
+  string asset_url = 6;
+  string mime_type = 7;
+  int64 file_size = 8;
+  int32 associated_turn_id = 9;
+  google.protobuf.Struct metadata = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message ListAssetsRequest {
+  string session_id = 1;
+  AssetType type_filter = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+  string order_by = 5;
+}
+
+message ListAssetsResponse {
+  repeated AssetData assets = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message DeleteAssetRequest {
+  string asset_id = 1;
+}
+
+message DeleteAssetResponse {
+  bool success = 1;
+}
+
+// Illustration Messages
+
+message RequestIllustrationRequest {
+  string session_id = 1;
+  int32 turn_id = 2;
+  IllustrationRequest illustration_request = 3;
+}
+
+message IllustrationRequest {
+  string scene_description = 1;
+  string style_preset = 2;
+  string mood = 3;
+  repeated string character_references = 4; // Character note IDs
+  repeated string location_references = 5; // Location note IDs
+  string positive_prompt = 6;
+  string negative_prompt = 7;
+  IllustrationPriority priority = 8;
+}
+
+enum IllustrationPriority {
+  ILLUSTRATION_PRIORITY_UNSPECIFIED = 0;
+  ILLUSTRATION_PRIORITY_LOW = 1;
+  ILLUSTRATION_PRIORITY_NORMAL = 2;
+  ILLUSTRATION_PRIORITY_HIGH = 3;
+  ILLUSTRATION_PRIORITY_CRITICAL = 4;
+}
+
+message RequestIllustrationResponse {
+  string job_id = 1; // Hangfire job ID for tracking
+  IllustrationStatus status = 2;
+}
+
+message GetIllustrationStatusRequest {
+  string job_id = 1;
+}
+
+message GetIllustrationStatusResponse {
+  IllustrationStatus status = 1;
+  string asset_id = 2; // Set when completed
+  string asset_url = 3; // Set when completed
+  string error_message = 4; // Set if failed
+  int32 progress_percentage = 5; // 0-100
+}
+
+enum IllustrationStatus {
+  ILLUSTRATION_STATUS_UNSPECIFIED = 0;
+  ILLUSTRATION_STATUS_QUEUED = 1;
+  ILLUSTRATION_STATUS_PROCESSING = 2;
+  ILLUSTRATION_STATUS_COMPLETED = 3;
+  ILLUSTRATION_STATUS_FAILED = 4;
+  ILLUSTRATION_STATUS_CANCELLED = 5;
+}
+
+// Visual Canon Messages
+
+message UpdateVisualCanonRequest {
+  string session_id = 1;
+  VisualCanonEntry entry = 2;
+}
+
+message VisualCanonEntry {
+  string entry_id = 1; // Character or location note ID
+  VisualCanonType entry_type = 2;
+  string name = 3;
+  string canonical_description = 4; // Fixed visual description
+  repeated string reference_asset_ids = 5; // Asset IDs showing canonical appearance
+  google.protobuf.Struct appearance_details = 6; // Structured appearance data
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+enum VisualCanonType {
+  VISUAL_CANON_TYPE_UNSPECIFIED = 0;
+  VISUAL_CANON_TYPE_CHARACTER = 1;
+  VISUAL_CANON_TYPE_LOCATION = 2;
+  VISUAL_CANON_TYPE_ITEM = 3;
+  VISUAL_CANON_TYPE_CREATURE = 4;
+}
+
+message UpdateVisualCanonResponse {
+  bool success = 1;
+}
+
+message GetVisualCanonRequest {
+  string session_id = 1;
+  VisualCanonType type_filter = 2;
+}
+
+message GetVisualCanonResponse {
+  repeated VisualCanonEntry entries = 1;
+}
+
+// Character appearance details (example)
+message CharacterAppearance {
+  string body_type = 1;
+  string height = 2;
+  string hair_color = 3;
+  string hair_style = 4;
+  string eye_color = 5;
+  string skin_tone = 6;
+  string distinctive_features = 7;
+  string typical_clothing = 8;
+  repeated string accessories = 9;
+}
+
+// Location appearance details (example)
+message LocationAppearance {
+  string architectural_style = 1;
+  string color_palette = 2;
+  string lighting = 3;
+  string weather = 4;
+  string time_of_day = 5;
+  repeated string prominent_features = 6;
+  string atmosphere = 7;
+}

@@ -1,0 +1,231 @@
+syntax = "proto3";
+
+package textrpg.jobs;
+
+option csharp_namespace = "TextRpg.Jobs";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Jobs service for background job processing via Hangfire.
+// This service handles asynchronous tasks like illustration generation,
+// report generation, and local AI execution bridging.
+service WorkerService {
+  // Job submission
+  rpc SubmitIllustrationJob(SubmitIllustrationJobRequest) returns (SubmitIllustrationJobResponse);
+  rpc SubmitReportJob(SubmitReportJobRequest) returns (SubmitReportJobResponse);
+  rpc SubmitLocalExecutionJob(SubmitLocalExecutionJobRequest) returns (SubmitLocalExecutionJobResponse);
+  rpc SubmitCustomJob(SubmitCustomJobRequest) returns (SubmitCustomJobResponse);
+  
+  // Job status and control
+  rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusResponse);
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+  rpc RetryJob(RetryJobRequest) returns (RetryJobResponse);
+  
+  // Job listing and history
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
+  rpc GetJobResult(GetJobResultRequest) returns (GetJobResultResponse);
+}
+
+// Illustration Job Messages
+
+message SubmitIllustrationJobRequest {
+  string session_id = 1;
+  int32 turn_id = 2;
+  IllustrationJobParams params = 3;
+  JobPriority priority = 4;
+}
+
+message IllustrationJobParams {
+  string scene_description = 1;
+  string style_preset = 2;
+  string mood = 3;
+  repeated string character_references = 4;
+  repeated string location_references = 5;
+  string positive_prompt = 6;
+  string negative_prompt = 7;
+  ExecutionTarget target = 8; // cloud or local
+  google.protobuf.Struct model_settings = 9;
+}
+
+enum ExecutionTarget {
+  EXECUTION_TARGET_UNSPECIFIED = 0;
+  EXECUTION_TARGET_CLOUD = 1;
+  EXECUTION_TARGET_LOCAL = 2;
+  EXECUTION_TARGET_AUTO = 3; // Auto-select based on availability
+}
+
+enum JobPriority {
+  JOB_PRIORITY_UNSPECIFIED = 0;
+  JOB_PRIORITY_LOW = 1;
+  JOB_PRIORITY_NORMAL = 2;
+  JOB_PRIORITY_HIGH = 3;
+  JOB_PRIORITY_CRITICAL = 4;
+}
+
+message SubmitIllustrationJobResponse {
+  string job_id = 1;
+  JobStatus status = 2;
+  google.protobuf.Timestamp submitted_at = 3;
+}
+
+// Report Job Messages
+
+message SubmitReportJobRequest {
+  string session_id = 1;
+  ReportJobParams params = 2;
+  JobPriority priority = 3;
+}
+
+message ReportJobParams {
+  ReportType report_type = 1;
+  int32 from_turn = 2;
+  int32 to_turn = 3;
+  string format = 4; // e.g., "markdown", "pdf", "html"
+  google.protobuf.Struct options = 5;
+}
+
+enum ReportType {
+  REPORT_TYPE_UNSPECIFIED = 0;
+  REPORT_TYPE_SESSION_LOG = 1;
+  REPORT_TYPE_NOVEL = 2; // Formatted as a novel/story
+  REPORT_TYPE_STATISTICS = 3;
+  REPORT_TYPE_CHARACTER_SHEET = 4;
+  REPORT_TYPE_TIMELINE = 5;
+}
+
+message SubmitReportJobResponse {
+  string job_id = 1;
+  JobStatus status = 2;
+  google.protobuf.Timestamp submitted_at = 3;
+}
+
+// Local Execution Job Messages
+
+message SubmitLocalExecutionJobRequest {
+  string session_id = 1;
+  LocalExecutionJobParams params = 2;
+  JobPriority priority = 3;
+  int32 timeout_seconds = 4;
+}
+
+message LocalExecutionJobParams {
+  LocalExecutionType execution_type = 1;
+  google.protobuf.Struct payload = 2; // Flexible payload for different execution types
+  string required_capability = 3; // e.g., "llm", "image-generation", "audio"
+}
+
+enum LocalExecutionType {
+  LOCAL_EXECUTION_TYPE_UNSPECIFIED = 0;
+  LOCAL_EXECUTION_TYPE_LLM = 1;
+  LOCAL_EXECUTION_TYPE_IMAGE_GENERATION = 2;
+  LOCAL_EXECUTION_TYPE_AUDIO_GENERATION = 3;
+  LOCAL_EXECUTION_TYPE_CUSTOM = 99;
+}
+
+message SubmitLocalExecutionJobResponse {
+  string job_id = 1;
+  JobStatus status = 2;
+  google.protobuf.Timestamp submitted_at = 3;
+  string message = 4; // e.g., "Waiting for local gateway connection"
+}
+
+// Custom Job Messages
+
+message SubmitCustomJobRequest {
+  string session_id = 1;
+  string job_type = 2;
+  google.protobuf.Struct payload = 3;
+  JobPriority priority = 4;
+}
+
+message SubmitCustomJobResponse {
+  string job_id = 1;
+  JobStatus status = 2;
+  google.protobuf.Timestamp submitted_at = 3;
+}
+
+// Job Status and Control Messages
+
+message GetJobStatusRequest {
+  string job_id = 1;
+}
+
+message GetJobStatusResponse {
+  JobStatus status = 1;
+  int32 progress_percentage = 2;
+  string status_message = 3;
+  google.protobuf.Timestamp submitted_at = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Timestamp completed_at = 6;
+  int32 retry_count = 7;
+  string error_message = 8;
+}
+
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  JOB_STATUS_QUEUED = 1;
+  JOB_STATUS_WAITING = 2; // Waiting for resources (e.g., local gateway)
+  JOB_STATUS_PROCESSING = 3;
+  JOB_STATUS_COMPLETED = 4;
+  JOB_STATUS_FAILED = 5;
+  JOB_STATUS_CANCELLED = 6;
+  JOB_STATUS_RETRYING = 7;
+}
+
+message CancelJobRequest {
+  string job_id = 1;
+}
+
+message CancelJobResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message RetryJobRequest {
+  string job_id = 1;
+}
+
+message RetryJobResponse {
+  bool success = 1;
+  string new_job_id = 2;
+}
+
+// Job Listing Messages
+
+message ListJobsRequest {
+  string session_id = 1;
+  JobStatus status_filter = 2;
+  string job_type_filter = 3; // e.g., "illustration", "report"
+  int32 page = 4;
+  int32 page_size = 5;
+  string order_by = 6;
+}
+
+message ListJobsResponse {
+  repeated JobSummary jobs = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message JobSummary {
+  string job_id = 1;
+  string job_type = 2;
+  JobStatus status = 3;
+  JobPriority priority = 4;
+  google.protobuf.Timestamp submitted_at = 5;
+  google.protobuf.Timestamp completed_at = 6;
+  int32 progress_percentage = 7;
+}
+
+message GetJobResultRequest {
+  string job_id = 1;
+}
+
+message GetJobResultResponse {
+  bool success = 1;
+  google.protobuf.Struct result = 2; // Flexible result structure
+  string result_url = 3; // URL to download result if applicable
+  bytes result_data = 4; // Binary result if applicable
+}
