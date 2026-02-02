@@ -1,0 +1,23 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>TextRpg.AppHost</RootNamespace>
+    <UserSecretsId>9e27a078-c59d-4dd3-98af-83dcb032398d</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BffGateway\BffGateway.csproj" />
+    <ProjectReference Include="..\CoreBackend\CoreBackend.csproj" />
+    <ProjectReference Include="..\AIOrchestrator\AIOrchestrator.csproj" />
+    <ProjectReference Include="..\Jobs\Jobs.csproj" />
+  </ItemGroup>
+
+</Project>

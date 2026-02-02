@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TextRpg.LocalGateway</RootNamespace>
+    <UserSecretsId>dotnet-LocalGateway-a329ffad-8ea6-4e0e-81f2-6be1ad7af646</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.Net.Client" Version="2.57.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Contracts\Contracts.csproj" />
+    <ProjectReference Include="..\Shared\Protos\Protos.csproj" />
+  </ItemGroup>
+</Project>

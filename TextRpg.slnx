@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AIOrchestrator/AIOrchestrator.csproj" />
+    <Project Path="src/AppHost/AppHost.csproj" />
+    <Project Path="src/BffGateway/BffGateway.csproj" />
+    <Project Path="src/CoreBackend/CoreBackend.csproj" />
+    <Project Path="src/Jobs/Jobs.csproj" />
+    <Project Path="src/LocalGateway/LocalGateway.csproj" />
+    <Project Path="src/RulesEngine/RulesEngine.csproj" />
+    <Project Path="src/ServiceDefaults/ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Contracts/Contracts.csproj" />
+    <Project Path="src/Shared/Protos/Protos.csproj" />
+    <Project Path="src/Shared/Utils/Utils.csproj" />
+  </Folder>
+</Solution>

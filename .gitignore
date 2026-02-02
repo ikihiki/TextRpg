@@ -1,0 +1,159 @@
+# .NET
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+*.userprefs
+.vs/
+*.rsuser
+.idea/
+*.DotSettings.user
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# User-specific files
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!.nuget/NuGet.Config
+!.nuget/NuGet.exe
+!.nuget/NuGet.targets
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+
+# NCrunch
+_NCrunch_*/
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# CodeRush personal settings
+.cr/personal
+
+# Resharper personal settings
+*.resharper.user
+*_Resharper.*
+
+# Cake - Pair with msbuild
+tools/**
+!tools/packages.config
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# VS Code directories
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnp/
+.pnp.js
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Build outputs
+dist/
+out/
+build/
+
+# Frontend coverage
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# Generated proto files (if not checked in)
+# src/Shared/Protos/generated/
+
+# Aspire secrets
+appsettings.local.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~.nib
+
+# Hangfire storage
+hangfire-*.db
+
+# Local development configuration
+launchSettings.local.json
+
+# Log files
+*.log
+
+# Database files
+*.db
+*.sqlite
+*.mdf
+*.ldf
