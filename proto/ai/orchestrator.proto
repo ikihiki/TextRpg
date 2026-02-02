@@ -82,7 +82,9 @@ message LorebookContext {
 message NarrativeGenerationSettings {
   AIDiscretionLevel discretion_level = 1;
   int32 max_length = 2; // In tokens
-  int32 temperature = 3; // Multiplied by 100
+  // Temperature multiplied by 100 for cross-language compatibility and to avoid floating point precision issues
+  // (e.g., 70 = 0.70, 100 = 1.00). This ensures consistent representation across all platforms.
+  int32 temperature = 3;
   string preferred_provider = 4; // cloud, local, or specific provider name
   bool enable_combat_narration = 5;
   bool enable_dice_narration = 6;

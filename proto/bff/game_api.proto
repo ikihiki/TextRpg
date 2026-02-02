@@ -133,7 +133,9 @@ message UpdateAISettingsResponse {
 message AISettings {
   AIDiscretionLevel discretion_level = 1;
   string model_preference = 2;
-  int32 temperature = 3; // Multiplied by 100 (e.g., 70 = 0.70)
+  // Temperature multiplied by 100 for cross-language compatibility and to avoid floating point precision issues
+  // (e.g., 70 = 0.70, 100 = 1.00). This ensures consistent representation across all platforms.
+  int32 temperature = 3;
   int32 max_tokens = 4;
 }
 

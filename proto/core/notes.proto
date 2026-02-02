@@ -93,7 +93,7 @@ message NoteData {
   google.protobuf.Struct extensions = 13;
   repeated string tag_ids = 14;
   repeated string thread_ids = 15;
-  string evidence_turn_ids = 16; // Comma-separated turn IDs as evidence
+  repeated int32 evidence_turn_ids = 16; // Turn IDs that provide evidence for this note
   google.protobuf.Timestamp created_at = 17;
   google.protobuf.Timestamp updated_at = 18;
 }
