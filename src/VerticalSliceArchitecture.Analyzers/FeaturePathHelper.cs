@@ -53,11 +53,13 @@ internal static class FeaturePathHelper
         if (string.IsNullOrEmpty(projectNameOrPath))
             return null;
 
-        var fileName = Path.GetFileNameWithoutExtension(projectNameOrPath);
+        // Get just the filename without path
+        var fileName = Path.GetFileName(projectNameOrPath);
         
-        if (fileName.EndsWith(".Features", StringComparison.OrdinalIgnoreCase))
+        var suffix = ".Features";
+        if (fileName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
         {
-            return fileName.Substring(0, fileName.Length - ".Features".Length);
+            return fileName.Substring(0, fileName.Length - suffix.Length);
         }
 
         return null;
