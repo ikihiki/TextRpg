@@ -1,0 +1,15 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+# Vertical Slice Architecture Analyzer Rules - All are ERRORS
+dotnet_diagnostic.VSA001.severity = error
+dotnet_diagnostic.VSA002.severity = error
+dotnet_diagnostic.VSA010.severity = error
+dotnet_diagnostic.VSA011.severity = error
+dotnet_diagnostic.VSA020.severity = error
+dotnet_diagnostic.VSA030.severity = error
