@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BffGateway</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Contracts\Shared.Contracts.csproj" />
+    <ProjectReference Include="..\Shared\Protos\Shared.Protos.csproj" />
+    <ProjectReference Include="..\Shared\Utils\Shared.Utils.csproj" />
+  </ItemGroup>
+
+</Project>

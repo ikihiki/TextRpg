@@ -3,6 +3,22 @@
     <Project Path="src/VerticalSliceArchitecture.Analyzers/VerticalSliceArchitecture.Analyzers.csproj" />
     <Project Path="src/VerticalSliceArchitecture.Core/VerticalSliceArchitecture.Core.csproj" />
   </Folder>
+  <Folder Name="/src/AppHost/">
+    <Project Path="src/AppHost/AppHost.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Contracts/Shared.Contracts.csproj" />
+    <Project Path="src/Shared/Protos/Shared.Protos.csproj" />
+    <Project Path="src/Shared/Utils/Shared.Utils.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/">
+    <Project Path="src/CoreBackend/CoreBackend.csproj" />
+    <Project Path="src/RulesEngine/RulesEngine.csproj" />
+    <Project Path="src/AIOrchestrator/AIOrchestrator.csproj" />
+    <Project Path="src/Jobs/Jobs.csproj" />
+    <Project Path="src/BffGateway/BffGateway.csproj" />
+    <Project Path="src/LocalGateway/LocalGateway.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VerticalSliceArchitecture.Analyzers.Tests/VerticalSliceArchitecture.Analyzers.Tests.csproj" />
   </Folder>
