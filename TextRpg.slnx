@@ -1,15 +1,17 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/VerticalSliceArchitecture.Analyzers.Tests/VerticalSliceArchitecture.Analyzers.Tests.csproj" />
     <Project Path="src/VerticalSliceArchitecture.Analyzers/VerticalSliceArchitecture.Analyzers.csproj" />
     <Project Path="src/VerticalSliceArchitecture.Core/VerticalSliceArchitecture.Core.csproj" />
   </Folder>
-  <Folder Name="/src/Battle/">
-    <Project Path="src/Battle/Battle.Domain/Battle.Domain.csproj" />
-    <Project Path="src/Battle/Battle.Features/Battle.Features.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/VerticalSliceArchitecture.Analyzers.Tests/VerticalSliceArchitecture.Analyzers.Tests.csproj" />
   </Folder>
-  <Folder Name="/src/Story/">
-    <Project Path="src/Story/Story.Domain/Story.Domain.csproj" />
-    <Project Path="src/Story/Story.Features/Story.Features.csproj" />
+  <Folder Name="/tests/Battle/">
+    <Project Path="tests/Battle/Battle.Domain/Battle.Domain.csproj" />
+    <Project Path="tests/Battle/Battle.Features/Battle.Features.csproj" />
+  </Folder>
+  <Folder Name="/tests/Story/">
+    <Project Path="tests/Story/Story.Domain/Story.Domain.csproj" />
+    <Project Path="tests/Story/Story.Features/Story.Features.csproj" />
   </Folder>
 </Solution>

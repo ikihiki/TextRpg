@@ -3,6 +3,26 @@
 ## Overview
 Successfully implemented a comprehensive Roslyn Analyzer to enforce architectural rules on `*.Features` projects in the TextRPG repository. The analyzer ensures clean architecture boundaries, prevents public API bloat, and maintains feature isolation.
 
+## Project Structure
+
+```
+/src
+  VerticalSliceArchitecture.Core/        # IUseCase interface
+  VerticalSliceArchitecture.Analyzers/   # Roslyn Analyzer implementation
+
+/tests
+  VerticalSliceArchitecture.Analyzers.Tests/  # Unit tests
+  Story/                                       # Sample project for testing
+    Story.Domain/
+    Story.Features/
+  Battle/                                      # Sample project for testing
+    Battle.Domain/
+    Battle.Features/
+
+/docs
+  vertical-slice-architecture-analyzer.md     # Japanese documentation
+```
+
 ## What Was Implemented
 
 ### 1. Core Infrastructure
@@ -34,7 +54,7 @@ All diagnostics are enforced as **build-time errors** (not warnings):
 ### 3. Implementation Details
 
 #### Namespace Validation (VSA001, VSA002)
-- Extracts feature name from file path: `/src/<Unit>/<Unit>.Features/Features/<FeatureName>/File.cs`
+- Extracts feature name from file path: `/tests/<Unit>/<Unit>.Features/Features/<FeatureName>/File.cs`
 - Validates namespace matches pattern: `<Unit>.Features.<FeatureName>`
 - Supports nested unit names (e.g., `TextRpg.Story.Features.ScenarioStart`)
 
@@ -56,15 +76,15 @@ All diagnostics are enforced as **build-time errors** (not warnings):
 
 ### 4. Sample Projects
 
-Created two complete example projects:
+Created two complete example projects in the `tests/` folder:
 
-**Story.Features**
+**Story.Features** (tests/Story/Story.Features/)
 - `ScenarioStart` feature with:
   - `StartScenario` UseCase
   - `StartScenarioRequest`
   - `StartScenarioResponse`
 
-**Battle.Features**
+**Battle.Features** (tests/Battle/Battle.Features/)
 - `ResolveBattle` feature with:
   - `ResolveBattle` UseCase
   - `ResolveBattleRequest`
@@ -72,7 +92,7 @@ Created two complete example projects:
 
 Both projects have the analyzer enabled via:
 ```xml
-<ProjectReference Include="..\..\VerticalSliceArchitecture.Analyzers\..."
+<ProjectReference Include="..\..\..\src\VerticalSliceArchitecture.Analyzers\..."
                   OutputItemType="Analyzer" 
                   ReferenceOutputAssembly="false" />
 ```

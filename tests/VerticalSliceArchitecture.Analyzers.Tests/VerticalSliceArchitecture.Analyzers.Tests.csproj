@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\VerticalSliceArchitecture.Core\VerticalSliceArchitecture.Core.csproj" />
-    <ProjectReference Include="..\VerticalSliceArchitecture.Analyzers\VerticalSliceArchitecture.Analyzers.csproj" />
+    <ProjectReference Include="..\..\src\VerticalSliceArchitecture.Core\VerticalSliceArchitecture.Core.csproj" />
+    <ProjectReference Include="..\..\src\VerticalSliceArchitecture.Analyzers\VerticalSliceArchitecture.Analyzers.csproj" />
   </ItemGroup>
 
   <ItemGroup>

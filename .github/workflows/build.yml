@@ -31,7 +31,7 @@ jobs:
       run: dotnet test --no-build --configuration Release --verbosity normal
     
     - name: Build Story.Features (enforces analyzer rules)
-      run: dotnet build src/Story/Story.Features/Story.Features.csproj --configuration Release
+      run: dotnet build tests/Story/Story.Features/Story.Features.csproj --configuration Release
     
     - name: Build Battle.Features (enforces analyzer rules)
-      run: dotnet build src/Battle/Battle.Features/Battle.Features.csproj --configuration Release
+      run: dotnet build tests/Battle/Battle.Features/Battle.Features.csproj --configuration Release

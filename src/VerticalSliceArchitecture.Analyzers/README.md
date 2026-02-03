@@ -26,7 +26,12 @@ The analyzer ensures:
 
 ```
 /src
-  /<Unit>
+  VerticalSliceArchitecture.Core/        # IUseCase interface
+  VerticalSliceArchitecture.Analyzers/   # Roslyn Analyzer
+
+/tests
+  VerticalSliceArchitecture.Analyzers.Tests/  # Unit tests
+  <Unit>/
     <Unit>.Domain/
     <Unit>.Features/
       Features/
@@ -41,7 +46,8 @@ The analyzer ensures:
 The analyzer is automatically applied to `*.Features` projects through project references:
 
 ```xml
-<ProjectReference Include="..\..\VerticalSliceArchitecture.Analyzers\VerticalSliceArchitecture.Analyzers.csproj" 
+<ProjectReference Include="..\..\..\src\VerticalSliceArchitecture.Core\VerticalSliceArchitecture.Core.csproj" />
+<ProjectReference Include="..\..\..\src\VerticalSliceArchitecture.Analyzers\VerticalSliceArchitecture.Analyzers.csproj" 
                   OutputItemType="Analyzer" 
                   ReferenceOutputAssembly="false" />
 ```
