@@ -1,5 +1,3 @@
-using VerticalSliceArchitecture.Core;
-
 namespace Battle.Features.ResolveBattle;
 
 public class ResolveBattleRequest

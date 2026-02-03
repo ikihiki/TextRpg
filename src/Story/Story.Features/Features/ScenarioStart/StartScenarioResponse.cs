@@ -1,5 +1,3 @@
-using VerticalSliceArchitecture.Core;
-
 namespace Story.Features.ScenarioStart;
 
 public class StartScenarioResponse
