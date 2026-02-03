@@ -15,5 +15,12 @@ public class DiceExpression
         return new DiceExpression();
     }
 
-    public override string ToString() => $"{DiceCount}d{DiceSides}{(Modifier >= 0 ? "+" : "")}{Modifier}";
+    public override string ToString()
+    {
+        if (Modifier == 0)
+        {
+            return $"{DiceCount}d{DiceSides}";
+        }
+        return $"{DiceCount}d{DiceSides}{(Modifier > 0 ? "+" : "")}{Modifier}";
+    }
 }
