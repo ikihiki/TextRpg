@@ -172,14 +172,42 @@ AIとユーザーが共同で物語を進行・編集できる
 ## ライセンス
 
 未定（検討中）
-了解です。
-以下を **README.md にそのまま追記できる「リポジトリ構成案」**として用意しました。
-.NET Aspire 前提・gRPC境界前提・「後から分離しやすい」構成になっています。
 
 ## リポジトリ構成
 
 本リポジトリは **.NET Aspire を中心にしたマルチプロジェクト構成**を採用します。  
 最初は「まとめて動く」ことを優先しつつ、**ホットな部分（AI / Jobs / Gateway）から独立デプロイできる**ように設計されています。
+
+### Vertical Slice Architecture + DDD（Features と Domains の分離）
+
+各バックエンドプロジェクトは **Vertical Slice Architecture** と **Domain-Driven Design** のハイブリッド構成を採用しています。
+
+- **Features/**: ユースケース（Command / Query）とそのハンドラーを配置
+- **Domains/**: ドメインエンティティ、集約、値オブジェクト、ドメインサービスを配置
+
+**なぜ分離するのか**:
+- 🧩 **関心の分離**: ユースケース（アプリケーション層）とドメインモデル（ドメイン層）を明確に区別
+- 🔄 **再利用性**: ドメインモデルは複数のユースケースから参照可能
+- 📐 **ドメイン駆動**: ビジネスルールがドメイン層に集約され、理解しやすい
+- 🧪 **テスト容易性**: ドメインロジックを独立してテスト可能
+
+**構成パターン**:
+```
+Domains/                       # ドメイン層
+├─ <ドメイン名>/
+│  ├─ <Aggregate>.cs           # 集約ルートエンティティ
+│  ├─ <Entity>.cs              # エンティティ
+│  ├─ <ValueObject>.cs         # 値オブジェクト
+│  ├─ I<Repository>.cs         # リポジトリインターフェース
+│  └─ <DomainService>.cs       # ドメインサービス
+
+Features/                      # アプリケーション層
+├─ <機能名>/
+│  ├─ <ユースケース>/
+│  │  ├─ <Command/Query>.cs    # リクエスト定義
+│  │  ├─ <Handler>.cs          # ハンドラー実装
+│  │  └─ <Validator>.cs        # バリデーション
+```
 
 ```text
 /
@@ -217,70 +245,200 @@ AIとユーザーが共同で物語を進行・編集できる
 │  │
 │  ├─ CoreBackend/            # Unit B: Core Backend（Stable）
 │  │  ├─ CoreBackend.csproj
-│  │  ├─ Services/
-│  │  │  ├─ SessionService.cs
-│  │  │  ├─ NotesService.cs
-│  │  │  └─ AssetService.cs
-│  │  ├─ Domain/
-│  │  │  ├─ State/
-│  │  │  ├─ Notes/
-│  │  │  └─ Stories/
-│  │  ├─ Persistence/
-│  │  │  ├─ DbContext.cs
-│  │  │  └─ Migrations/
-│  │  └─ Configuration/
+│  │  ├─ Domains/             # ドメイン層：エンティティ・集約・値オブジェクト
+│  │  │  ├─ Sessions/         # セッションドメイン
+│  │  │  │  ├─ Session.cs              # 集約ルート
+│  │  │  │  ├─ SessionState.cs         # エンティティ
+│  │  │  │  ├─ SessionId.cs            # 値オブジェクト
+│  │  │  │  └─ ISessionRepository.cs   # リポジトリインターフェース
+│  │  │  ├─ Notes/            # ノートドメイン
+│  │  │  │  ├─ Note.cs                 # 集約ルート
+│  │  │  │  ├─ NoteType.cs             # 値オブジェクト
+│  │  │  │  ├─ CanonLevel.cs           # 値オブジェクト
+│  │  │  │  └─ INoteRepository.cs
+│  │  │  ├─ Assets/           # アセットドメイン
+│  │  │  │  ├─ Asset.cs
+│  │  │  │  ├─ VisualCanon.cs
+│  │  │  │  └─ IAssetRepository.cs
+│  │  │  └─ Turns/            # ターンドメイン
+│  │  │     ├─ Turn.cs
+│  │  │     ├─ TurnLog.cs
+│  │  │     └─ ITurnRepository.cs
+│  │  ├─ Features/            # アプリケーション層：ユースケース
+│  │  │  ├─ Sessions/         # セッション管理機能
+│  │  │  │  ├─ CreateSession/
+│  │  │  │  │  ├─ CreateSessionCommand.cs
+│  │  │  │  │  ├─ CreateSessionHandler.cs
+│  │  │  │  │  └─ CreateSessionValidator.cs
+│  │  │  │  ├─ GetSession/
+│  │  │  │  │  ├─ GetSessionQuery.cs
+│  │  │  │  │  └─ GetSessionHandler.cs
+│  │  │  │  └─ UpdateSessionState/
+│  │  │  │     ├─ UpdateSessionStateCommand.cs
+│  │  │  │     └─ UpdateSessionStateHandler.cs
+│  │  │  ├─ Notes/            # ノート管理機能
+│  │  │  │  ├─ CreateNote/
+│  │  │  │  ├─ UpdateNote/
+│  │  │  │  └─ GetNotes/
+│  │  │  ├─ Assets/           # アセット管理機能
+│  │  │  │  ├─ UploadAsset/
+│  │  │  │  └─ GetAssets/
+│  │  │  └─ Turns/            # ターン管理機能
+│  │  │     ├─ CreateTurn/
+│  │  │     └─ RewindTurn/
+│  │  ├─ Infrastructure/      # インフラ層：横断的関心事
+│  │  │  ├─ Persistence/
+│  │  │  │  ├─ AppDbContext.cs
+│  │  │  │  ├─ Repositories/  # リポジトリ実装
+│  │  │  │  └─ Migrations/
+│  │  │  └─ Configuration/
+│  │  └─ Services/            # gRPC サービスエンドポイント
+│  │     ├─ SessionService.cs
+│  │     ├─ NotesService.cs
+│  │     └─ AssetService.cs
 │  │
 │  ├─ RulesEngine/            # Unit C: ルールエンジン（ライブラリ）
 │  │  ├─ RulesEngine.csproj
-│  │  ├─ Combat/
-│  │  ├─ Dice/
+│  │  ├─ Domains/             # ドメイン層
+│  │  │  ├─ Combat/           # 戦闘ドメイン
+│  │  │  │  ├─ CombatResult.cs
+│  │  │  │  ├─ Combatant.cs
+│  │  │  │  └─ ICombatResolver.cs
+│  │  │  └─ Dice/             # ダイスドメイン
+│  │  │     ├─ DiceRoll.cs
+│  │  │     ├─ DiceExpression.cs
+│  │  │     └─ IDiceRoller.cs
+│  │  ├─ Features/            # アプリケーション層
+│  │  │  ├─ Combat/
+│  │  │  │  └─ ResolveCombat/
+│  │  │  └─ Dice/
+│  │  │     └─ RollDice/
 │  │  └─ Tests/
 │  │
 │  ├─ AIOrchestrator/         # Unit D: AI Orchestrator（Hot）
 │  │  ├─ AIOrchestrator.csproj
-│  │  ├─ Services/
-│  │  │  └─ OrchestratorService.cs
-│  │  ├─ Routing/
-│  │  │  └─ PolicyRouter.cs
-│  │  ├─ Context/
-│  │  │  ├─ ContextBuilder.cs
-│  │  │  └─ Sanitizer.cs
-│  │  ├─ Providers/
-│  │  │  ├─ CloudProvider.cs
-│  │  │  └─ LocalProvider.cs
-│  │  └─ Validation/
+│  │  ├─ Domains/             # ドメイン層
+│  │  │  ├─ Narrative/        # 物語生成ドメイン
+│  │  │  │  ├─ NarrativeResult.cs
+│  │  │  │  ├─ NarrativeContext.cs
+│  │  │  │  └─ INarrativeGenerator.cs
+│  │  │  ├─ Context/          # コンテキストドメイン
+│  │  │  │  ├─ AIContext.cs
+│  │  │  │  └─ IContextBuilder.cs
+│  │  │  └─ Providers/        # プロバイダードメイン
+│  │  │     ├─ AIProvider.cs
+│  │  │     ├─ ProviderCapability.cs
+│  │  │     └─ IProviderRouter.cs
+│  │  ├─ Features/            # アプリケーション層
+│  │  │  ├─ NarrativeGeneration/    # 物語生成機能
+│  │  │  │  ├─ GenerateIntro/
+│  │  │  │  │  ├─ GenerateIntroCommand.cs
+│  │  │  │  │  └─ GenerateIntroHandler.cs
+│  │  │  │  └─ GenerateGameplay/
+│  │  │  ├─ Suggestions/      # 提案生成機能
+│  │  │  │  ├─ SuggestNote/
+│  │  │  │  └─ SuggestAction/
+│  │  │  ├─ ContextBuilding/  # コンテキスト構築機能
+│  │  │  │  ├─ BuildContext/
+│  │  │  │  └─ Sanitize/
+│  │  │  └─ Routing/          # ルーティング機能
+│  │  │     └─ RouteToProvider/
+│  │  ├─ Infrastructure/      # インフラ層
+│  │  │  └─ Providers/        # プロバイダー実装
+│  │  │     ├─ CloudProvider.cs
+│  │  │     └─ LocalProvider.cs
+│  │  └─ Services/            # gRPC サービスエンドポイント
+│  │     └─ OrchestratorService.cs
 │  │
 │  ├─ Jobs/                   # Unit E: Hangfire Worker / Plugins
 │  │  ├─ Jobs.csproj
-│  │  ├─ Workers/
-│  │  │  ├─ IllustrationJob.cs
-│  │  │  ├─ ReportJob.cs
-│  │  │  └─ LocalExecutionJob.cs
-│  │  ├─ Plugins/
-│  │  │  └─ PluginRuntime.cs
-│  │  └─ Hangfire/
+│  │  ├─ Domains/             # ドメイン層
+│  │  │  ├─ Illustration/     # 挿絵ドメイン
+│  │  │  │  ├─ IllustrationRequest.cs
+│  │  │  │  └─ IIllustrationGenerator.cs
+│  │  │  ├─ Reports/          # レポートドメイン
+│  │  │  │  ├─ ReportRequest.cs
+│  │  │  │  └─ IReportGenerator.cs
+│  │  │  └─ Execution/        # 実行ドメイン
+│  │  │     ├─ ExecutionTarget.cs
+│  │  │     └─ IJobExecutor.cs
+│  │  ├─ Features/            # アプリケーション層
+│  │  │  ├─ Illustration/     # 挿絵生成機能
+│  │  │  │  └─ GenerateIllustration/
+│  │  │  │     ├─ IllustrationJob.cs
+│  │  │  │     └─ IllustrationJobHandler.cs
+│  │  │  ├─ Reports/          # レポート生成機能
+│  │  │  │  ├─ GenerateSessionReport/
+│  │  │  │  └─ GenerateNovelExport/
+│  │  │  └─ LocalExecution/   # ローカル実行機能
+│  │  │     └─ ExecuteLocal/
+│  │  ├─ Infrastructure/      # インフラ層
+│  │  │  ├─ Hangfire/
+│  │  │  └─ Plugins/
+│  │  │     └─ PluginRuntime.cs
+│  │  └─ Services/            # gRPC サービスエンドポイント
 │  │
 │  ├─ BffGateway/             # Unit A: gRPC-Web BFF
 │  │  ├─ BffGateway.csproj
-│  │  ├─ Services/
-│  │  │  └─ GameApiService.cs
-│  │  ├─ Auth/
-│  │  └─ Middleware/
+│  │  ├─ Domains/             # ドメイン層（BFF固有のモデル）
+│  │  │  ├─ Scenarios/        # シナリオドメイン
+│  │  │  │  └─ ScenarioViewModel.cs
+│  │  │  ├─ GameSessions/     # ゲームセッションドメイン
+│  │  │  │  └─ GameSessionViewModel.cs
+│  │  │  └─ Gameplay/         # ゲームプレイドメイン
+│  │  │     └─ GameplayViewModel.cs
+│  │  ├─ Features/            # アプリケーション層
+│  │  │  ├─ Scenarios/        # シナリオ管理機能
+│  │  │  │  ├─ CreateScenario/
+│  │  │  │  └─ ListScenarios/
+│  │  │  ├─ GameSessions/     # ゲームセッション機能
+│  │  │  │  ├─ StartSession/
+│  │  │  │  └─ ResumeSession/
+│  │  │  └─ Gameplay/         # ゲームプレイ機能
+│  │  │     ├─ SubmitAction/
+│  │  │     └─ RewindTurn/
+│  │  ├─ Infrastructure/      # インフラ層
+│  │  │  ├─ Auth/
+│  │  │  └─ Middleware/
+│  │  └─ Services/            # gRPC サービスエンドポイント
+│  │     └─ GameApiService.cs
 │  │
-│  └─ LocalGateway/            # Unit F: 自宅PC側（別デプロイ）
+│  └─ LocalGateway/           # Unit F: 自宅PC側（別デプロイ）
 │     ├─ LocalGateway.csproj
-│     ├─ Streaming/
-│     │  └─ WorkStreamClient.cs
-│     ├─ Executors/
-│     │  ├─ LlmExecutor.cs
-│     │  └─ ImageExecutor.cs
-│     └─ Configuration/
+│     ├─ Domains/             # ドメイン層
+│     │  ├─ LlmExecution/     # LLM実行ドメイン
+│     │  │  ├─ LlmRequest.cs
+│     │  │  └─ ILlmExecutor.cs
+│     │  └─ ImageGeneration/  # 画像生成ドメイン
+│     │     ├─ ImageRequest.cs
+│     │     └─ IImageGenerator.cs
+│     ├─ Features/            # アプリケーション層
+│     │  ├─ LlmExecution/     # LLM実行機能
+│     │  │  └─ ExecuteLlm/
+│     │  └─ ImageGeneration/  # 画像生成機能
+│     │     └─ GenerateImage/
+│     ├─ Infrastructure/      # インフラ層
+│     │  ├─ Streaming/
+│     │  │  └─ WorkStreamClient.cs
+│     │  ├─ Executors/        # 実行者実装
+│     │  │  ├─ LlmExecutor.cs
+│     │  │  └─ ImageExecutor.cs
+│     │  └─ Configuration/
+│     └─ Services/            # gRPC サービスエンドポイント
 │
 ├─ frontend/                  # フロントエンド（TypeScript）
 │  ├─ package.json
 │  ├─ src/
 │  │  ├─ grpc/                # gRPC-Webクライアント
-│  │  ├─ ui/
+│  │  ├─ domains/             # ドメインモデル・型定義
+│  │  │  ├─ scenarios/
+│  │  │  ├─ gameplay/
+│  │  │  └─ notes/
+│  │  ├─ features/            # 機能・ユースケース
+│  │  │  ├─ scenarios/
+│  │  │  ├─ gameplay/
+│  │  │  └─ notes/
+│  │  ├─ ui/                  # 共有UIコンポーネント
 │  │  │  ├─ ActionPanel.tsx
 │  │  │  ├─ NotesPanel.tsx
 │  │  │  └─ Illustration.tsx
