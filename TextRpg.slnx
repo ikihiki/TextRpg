@@ -3,6 +3,44 @@
     <Project Path="src/VerticalSliceArchitecture.Analyzers/VerticalSliceArchitecture.Analyzers.csproj" />
     <Project Path="src/VerticalSliceArchitecture.Core/VerticalSliceArchitecture.Core.csproj" />
   </Folder>
+  <Folder Name="/src/AppHost/">
+    <Project Path="src/AppHost/AppHost.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Contracts/Shared.Contracts.csproj" />
+    <Project Path="src/Shared/Protos/Shared.Protos.csproj" />
+    <Project Path="src/Shared/Utils/Shared.Utils.csproj" />
+  </Folder>
+  <Folder Name="/src/CoreBackend/">
+    <Project Path="src/CoreBackend/CoreBackend.Domain/CoreBackend.Domain.csproj" />
+    <Project Path="src/CoreBackend/CoreBackend.Features/CoreBackend.Features.csproj" />
+    <Project Path="src/CoreBackend/CoreBackend.Service/CoreBackend.Service.csproj" />
+  </Folder>
+  <Folder Name="/src/RulesEngine/">
+    <Project Path="src/RulesEngine/RulesEngine.Domain/RulesEngine.Domain.csproj" />
+    <Project Path="src/RulesEngine/RulesEngine.Features/RulesEngine.Features.csproj" />
+    <Project Path="src/RulesEngine/RulesEngine.Service/RulesEngine.Service.csproj" />
+  </Folder>
+  <Folder Name="/src/AIOrchestrator/">
+    <Project Path="src/AIOrchestrator/AIOrchestrator.Domain/AIOrchestrator.Domain.csproj" />
+    <Project Path="src/AIOrchestrator/AIOrchestrator.Features/AIOrchestrator.Features.csproj" />
+    <Project Path="src/AIOrchestrator/AIOrchestrator.Service/AIOrchestrator.Service.csproj" />
+  </Folder>
+  <Folder Name="/src/Jobs/">
+    <Project Path="src/Jobs/Jobs.Domain/Jobs.Domain.csproj" />
+    <Project Path="src/Jobs/Jobs.Features/Jobs.Features.csproj" />
+    <Project Path="src/Jobs/Jobs.Service/Jobs.Service.csproj" />
+  </Folder>
+  <Folder Name="/src/BffGateway/">
+    <Project Path="src/BffGateway/BffGateway.Domain/BffGateway.Domain.csproj" />
+    <Project Path="src/BffGateway/BffGateway.Features/BffGateway.Features.csproj" />
+    <Project Path="src/BffGateway/BffGateway.Service/BffGateway.Service.csproj" />
+  </Folder>
+  <Folder Name="/src/LocalGateway/">
+    <Project Path="src/LocalGateway/LocalGateway.Domain/LocalGateway.Domain.csproj" />
+    <Project Path="src/LocalGateway/LocalGateway.Features/LocalGateway.Features.csproj" />
+    <Project Path="src/LocalGateway/LocalGateway.Service/LocalGateway.Service.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VerticalSliceArchitecture.Analyzers.Tests/VerticalSliceArchitecture.Analyzers.Tests.csproj" />
   </Folder>
