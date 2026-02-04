@@ -6,6 +6,7 @@ option csharp_namespace = "TextRpg.Core";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "core/notes.proto";
 
 // Core Backend service for session and state management.
 // This service owns the single source of truth for game state.
@@ -280,13 +281,6 @@ message LorebookEntry {
   string name = 3;
   string content = 4;
   CanonLevel canon_level = 5;
-}
-
-enum CanonLevel {
-  CANON_LEVEL_UNSPECIFIED = 0;
-  CANON_LEVEL_RUMOR = 1;
-  CANON_LEVEL_TENTATIVE = 2;
-  CANON_LEVEL_CANON = 3;
 }
 
 // Protagonist Messages
