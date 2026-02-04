@@ -52,4 +52,8 @@
     <Project Path="tests/Story/Story.Domain/Story.Domain.csproj" />
     <Project Path="tests/Story/Story.Features/Story.Features.csproj" />
   </Folder>
+  <Folder Name="/tests/CoreBackend/">
+    <Project Path="tests/CoreBackend/CoreBackend.Domain.Tests/CoreBackend.Domain.Tests.csproj" />
+    <Project Path="tests/CoreBackend/CoreBackend.Features.Tests/CoreBackend.Features.Tests.csproj" />
+  </Folder>
 </Solution>

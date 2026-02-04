@@ -1,7 +1,20 @@
+using CoreBackend.Domain.Scenarios;
+using CoreBackend.Service.Infrastructure.Persistence;
+using CoreBackend.Service.Infrastructure.Persistence.Repositories;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddGrpc();
+
+// Configure EF Core with PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// Register repositories
+builder.Services.AddScoped<IScenarioRepository, ScenarioRepository>();
 
 var app = builder.Build();
 
