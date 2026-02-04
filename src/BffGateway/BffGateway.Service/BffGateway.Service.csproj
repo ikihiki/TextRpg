@@ -9,10 +9,20 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
+    <PackageReference Include="Grpc.AspNetCore.Web" Version="2.57.0" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.57.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.57.0" PrivateAssets="All" />
+    <PackageReference Include="Google.Protobuf" Version="3.25.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="..\..\..\proto\bff\user_api.proto" GrpcServices="Server" />
+    <Protobuf Include="..\..\..\proto\core\user.proto" GrpcServices="Client" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BffGateway.Features\BffGateway.Features.csproj" />
+    <ProjectReference Include="..\..\ServiceDefaults\ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Shared\Contracts\Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\Shared\Protos\Shared.Protos.csproj" />
     <ProjectReference Include="..\..\Shared\Utils\Shared.Utils.csproj" />

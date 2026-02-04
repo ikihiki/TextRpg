@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/VerticalSliceArchitecture.Analyzers/VerticalSliceArchitecture.Analyzers.csproj" />
     <Project Path="src/VerticalSliceArchitecture.Core/VerticalSliceArchitecture.Core.csproj" />
+    <Project Path="src/ServiceDefaults/ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/src/AppHost/">
     <Project Path="src/AppHost/AppHost.csproj" />
@@ -14,6 +15,7 @@
   <Folder Name="/src/CoreBackend/">
     <Project Path="src/CoreBackend/CoreBackend.Domain/CoreBackend.Domain.csproj" />
     <Project Path="src/CoreBackend/CoreBackend.Features/CoreBackend.Features.csproj" />
+    <Project Path="src/CoreBackend/CoreBackend.Infrastructure/CoreBackend.Infrastructure.csproj" />
     <Project Path="src/CoreBackend/CoreBackend.Service/CoreBackend.Service.csproj" />
   </Folder>
   <Folder Name="/src/RulesEngine/">

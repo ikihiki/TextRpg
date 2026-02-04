@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package textrpg.bff;
+
+option csharp_namespace = "TextRpg.Bff";
+
+import "google/protobuf/timestamp.proto";
+
+// BFF Gateway service for user management via gRPC-Web.
+// This service acts as the edge gateway for browser clients.
+service UserApi {
+  // User registration (US-UM01)
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  
+  // User login (US-UM03)
+  rpc Login(LoginRequest) returns (LoginResponse);
+  
+  // User logout (US-UM04)
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  
+  // Get current user profile (US-UM08)
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  
+  // Update current user profile (US-UM09)
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  
+  // Delete current user account (US-UM11)
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
+}
+
+// User Registration Messages (US-UM01)
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  string user_id = 2;
+  string session_token = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  string error_message = 5;
+}
+
+// User Login Messages (US-UM03)
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  bool success = 1;
+  string user_id = 2;
+  string session_token = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  string error_message = 5;
+}
+
+// User Logout Messages (US-UM04)
+
+message LogoutRequest {
+  // Session token is typically passed via metadata/headers
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+// Get User Profile Messages (US-UM08)
+
+message GetProfileRequest {
+  // User ID is derived from the session token
+}
+
+message GetProfileResponse {
+  bool success = 1;
+  Profile profile = 2;
+  string error_message = 3;
+}
+
+message Profile {
+  string user_id = 1;
+  string email = 2;
+  string display_name = 3;
+  string icon_url = 4;
+  string bio = 5;
+  string language = 6;
+  ProfileNotificationSettings notification_settings = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message ProfileNotificationSettings {
+  bool note_updates = 1;
+  bool session_reminders = 2;
+  bool marketing = 3;
+}
+
+// Update User Profile Messages (US-UM09)
+
+message UpdateProfileRequest {
+  string display_name = 1;
+  string icon_url = 2;
+  string bio = 3;
+  string language = 4;
+  ProfileNotificationSettings notification_settings = 5;
+}
+
+message UpdateProfileResponse {
+  bool success = 1;
+  Profile profile = 2;
+  string error_message = 3;
+}
+
+// Delete User Account Messages (US-UM11)
+
+message DeleteAccountRequest {
+  string password = 1; // For re-authentication
+}
+
+message DeleteAccountResponse {
+  bool success = 1;
+  string error_message = 2;
+}

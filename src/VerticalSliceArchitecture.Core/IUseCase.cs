@@ -6,7 +6,7 @@ namespace VerticalSliceArchitecture.Core;
 /// </summary>
 /// <typeparam name="TRequest">The request type for this use case.</typeparam>
 /// <typeparam name="TResponse">The response type for this use case.</typeparam>
-public interface IUseCase<in TRequest, out TResponse>
+public interface IUseCase<in TRequest, TResponse>
 {
-    TResponse Execute(TRequest request);
+    ValueTask<TResponse> ExecuteAsync(TRequest request, CancellationToken cancellationToken = default);
 }

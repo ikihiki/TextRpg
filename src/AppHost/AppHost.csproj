@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Aspire.AppHost.Sdk/9.0.0">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,6 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CoreBackend\CoreBackend.Service\CoreBackend.Service.csproj" />
+    <ProjectReference Include="..\BffGateway\BffGateway.Service\BffGateway.Service.csproj" />
   </ItemGroup>
 
 </Project>
