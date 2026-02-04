@@ -1,4 +1,4 @@
-namespace Jobs.Infrastructure.Plugins;
+namespace Jobs.Service.Infrastructure.Plugins;
 
 /// <summary>
 /// プラグインランタイム

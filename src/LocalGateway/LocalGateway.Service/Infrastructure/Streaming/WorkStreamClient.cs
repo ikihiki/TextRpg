@@ -1,4 +1,4 @@
-namespace LocalGateway.Infrastructure.Streaming;
+namespace LocalGateway.Service.Infrastructure.Streaming;
 
 /// <summary>
 /// ワークストリームクライアント
