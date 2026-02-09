@@ -5,7 +5,7 @@ var k8s = builder.AddKubernetesEnvironment("k8s")
 var registry = builder.AddContainerRegistry(
 	"ghcr",                              // Registry name
 	"ghcr.io",                           // Registry endpoint
-	"ikihiki/TextRpg"     // Repository path
+	"ikihiki/textrpg"     // Repository path
 );
 var imageTag  = Environment.GetEnvironmentVariable("IMAGE_TAG") ?? "latest";
 
