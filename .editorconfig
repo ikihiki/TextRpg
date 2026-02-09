@@ -13,3 +13,9 @@ dotnet_diagnostic.VSA010.severity = error
 dotnet_diagnostic.VSA011.severity = error
 dotnet_diagnostic.VSA020.severity = error
 dotnet_diagnostic.VSA030.severity = error
+
+# ASPIRECOMPUTE003: 種類は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。続行するには、この診断を非表示にします。
+dotnet_diagnostic.ASPIRECOMPUTE003.severity = none
+
+# ASPIREPIPELINES003: 種類は、評価の目的でのみ提供されています。将来の更新で変更または削除されることがあります。続行するには、この診断を非表示にします。
+dotnet_diagnostic.ASPIREPIPELINES003.severity = none

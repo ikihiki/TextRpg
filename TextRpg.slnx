@@ -2,10 +2,8 @@
   <Folder Name="/src/">
     <Project Path="src/VerticalSliceArchitecture.Analyzers/VerticalSliceArchitecture.Analyzers.csproj" />
     <Project Path="src/VerticalSliceArchitecture.Core/VerticalSliceArchitecture.Core.csproj" />
-    <Project Path="src/ServiceDefaults/ServiceDefaults.csproj" />
-  </Folder>
-  <Folder Name="/src/AppHost/">
     <Project Path="src/AppHost/AppHost.csproj" />
+    <Project Path="src/ServiceDefaults/ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/Contracts/Shared.Contracts.csproj" />

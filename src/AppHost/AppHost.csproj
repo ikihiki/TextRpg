@@ -1,20 +1,26 @@
-<Project Sdk="Aspire.AppHost.Sdk/9.0.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+
+  <ItemGroup>
+    <ProjectReference Include="..\AIOrchestrator\AIOrchestrator.Service\AIOrchestrator.Service.csproj" />
+    <ProjectReference Include="..\BffGateway\BffGateway.Service\BffGateway.Service.csproj" />
+    <ProjectReference Include="..\CoreBackend\CoreBackend.Service\CoreBackend.Service.csproj" />
+    <ProjectReference Include="..\Jobs\Jobs.Service\Jobs.Service.csproj" />
+    <ProjectReference Include="..\LocalGateway\LocalGateway.Service\LocalGateway.Service.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Docker" Version="13.1.0-preview.1.25616.3" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.1.0" />
+    <PackageReference Include="Aspire.Hosting.Kubernetes" Version="13.1.0-preview.1.25616.3" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.1.0" />
+  </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>2a17cceb-725d-4e7b-82ed-bf7ff6446413</UserSecretsId>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\CoreBackend\CoreBackend.Service\CoreBackend.Service.csproj" />
-    <ProjectReference Include="..\BffGateway\BffGateway.Service\BffGateway.Service.csproj" />
-  </ItemGroup>
 
 </Project>

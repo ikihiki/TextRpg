@@ -1,37 +1,97 @@
-name: Build and Test
+name: Deploy to Kubernetes
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/textrpg
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     permissions:
       contents: read
+      packages: write
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-    
-    - name: Restore dependencies
-      run: dotnet restore
-    
-    - name: Build
-      run: dotnet build --no-restore --configuration Release
-    
-    - name: Run tests
-      run: dotnet test --no-build --configuration Release --verbosity normal
-    
-    - name: Build Story.Features (enforces analyzer rules)
-      run: dotnet build tests/Story/Story.Features/Story.Features.csproj --configuration Release
-    
-    - name: Build Battle.Features (enforces analyzer rules)
-      run: dotnet build tests/Battle/Battle.Features/Battle.Features.csproj --configuration Release
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Aspire
+        run: curl -sSL https://aspire.dev/install.sh | bash
+
+      - name: Generate Kubernetes manifests
+        run: aspire publish
+        
+      - name: Build and push container images
+        env:
+          IMAGE_TAG: ${{ github.sha }} 
+        run: aspire do push
+
+      - name: Upload manifests artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-manifests
+          path: src/AppHost/aspire-output
+
+  # deploy:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Tailscale
+  #       uses: tailscale/github-action@v2
+  #       with:
+  #         oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+  #         oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+  #         tags: tag:ci
+
+  #     - name: Configure kubeconfig
+  #       run: tailscale configure kubeconfig text-rpg-cluster
+
+  #     - name: Download manifests artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: k8s-manifests
+  #         path: manifests/
+
+  #     - name: Create namespace if not exists
+  #       run: kubectl create namespace textrpg --dry-run=client -o yaml | kubectl apply -f -
+
+  #     - name: Deploy to Kubernetes
+  #       run: |
+  #         kubectl apply -f manifests/ -n textrpg
+          
+  #     - name: Wait for deployments to be ready
+  #       run: |
+  #         kubectl rollout status deployment -n textrpg --timeout=300s

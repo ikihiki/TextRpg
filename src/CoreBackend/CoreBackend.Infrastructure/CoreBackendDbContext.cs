@@ -1,7 +1,26 @@
 using CoreBackend.Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 
 namespace CoreBackend.Infrastructure;
+
+
+
+public class CoreBackendDbContextFactory : IDesignTimeDbContextFactory<CoreBackendDbContext>
+{
+    public CoreBackendDbContext CreateDbContext(string[] args)
+    {
+        // 例: 環境変数 or appsettings から読む
+        var connectionString =
+            Environment.GetEnvironmentVariable("COREBACKEND_CONNECTION_STRING")
+            ?? "Host=localhost;Database=corebackend;Username=postgres;Password=postgres";
+
+        var optionsBuilder = new DbContextOptionsBuilder<CoreBackendDbContext>();
+        optionsBuilder.UseNpgsql(connectionString); // SQL Serverなら UseSqlServer
+
+        return new CoreBackendDbContext(optionsBuilder.Options);
+    }
+}
 
 public class CoreBackendDbContext : DbContext
 {
