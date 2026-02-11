@@ -54,44 +54,51 @@ jobs:
           IMAGE_TAG: ${{ github.sha }} 
         run: aspire do push
 
+      - name: Set image values
+        run: |
+          for service in corebackend bffgateway localgateway jobs aiorchestrator; do
+            sed -i "s|${service}_image: \".*\"|${service}_image: \"${REGISTRY}/${IMAGE_PREFIX}-${service}:${GITHUB_SHA}\"|" src/AppHost/aspire-output/values.yaml
+          done
+
       - name: Upload manifests artifact
         uses: actions/upload-artifact@v4
         with:
           name: k8s-manifests
           path: src/AppHost/aspire-output
 
-  # deploy:
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
-  #   steps:
-  #     - uses: actions/checkout@v4
+    steps:
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
-  #     - name: Tailscale
-  #       uses: tailscale/github-action@v2
-  #       with:
-  #         oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-  #         oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-  #         tags: tag:ci
+      - name: Configure kubeconfig
+        run: tailscale configure kubeconfig text-rpg-cluster
 
-  #     - name: Configure kubeconfig
-  #       run: tailscale configure kubeconfig text-rpg-cluster
+      - name: Download manifests artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: k8s-manifests
+          path: manifests/
 
-  #     - name: Download manifests artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: k8s-manifests
-  #         path: manifests/
+      - uses: azure/setup-helm@v4.3.0
 
-  #     - name: Create namespace if not exists
-  #       run: kubectl create namespace textrpg --dry-run=client -o yaml | kubectl apply -f -
+      - name: Deploy helm
+        run: |
+          helm upgrade --install textrpg manifests \
+            --set parameters.corebackend.corebackend_image=ghcr.io/ikihiki/textrpg/corebackend:${{ github.sha }} \
+            --set parameters.bffgateway.bffgateway_image=ghcr.io/ikihiki/textrpg/bffgateway:${{ github.sha }} \
+            --set parameters.localgateway.localgateway_image=ghcr.io/ikihiki/textrpg/localgateway:${{ github.sha }} \
+            --set parameters.jobs.jobs_image=ghcr.io/ikihiki/textrpg/jobs:${{ github.sha }} \
+            --set parameters.aiorchestrator.aiorchestrator_image=ghcr.io/ikihiki/textrpg/aiorchestrator:${{ github.sha }}\
+            --set secrets.postgres.POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+            --namespace {{github.head_ref}} --create-namespace
 
-  #     - name: Deploy to Kubernetes
-  #       run: |
-  #         kubectl apply -f manifests/ -n textrpg
-          
-  #     - name: Wait for deployments to be ready
-  #       run: |
-  #         kubectl rollout status deployment -n textrpg --timeout=300s
