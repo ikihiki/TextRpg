@@ -1,0 +1,6 @@
+apiVersion: v2
+name: textrpg
+description: AI Text RPG Platform - A web-based text RPG platform where AI and users collaborate on stories
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
