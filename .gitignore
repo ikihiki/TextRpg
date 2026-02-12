@@ -85,3 +85,25 @@ frontend/build/
 
 # macOS
 .DS_Store
+src/AppHost/aspire-output/Chart.yaml
+src/AppHost/aspire-output/values.yaml
+src/AppHost/aspire-output/templates/aiorchestrator/config.yaml
+src/AppHost/aspire-output/templates/aiorchestrator/deployment.yaml
+src/AppHost/aspire-output/templates/aiorchestrator/service.yaml
+src/AppHost/aspire-output/templates/bffgateway/config.yaml
+src/AppHost/aspire-output/templates/bffgateway/deployment.yaml
+src/AppHost/aspire-output/templates/bffgateway/service.yaml
+src/AppHost/aspire-output/templates/corebackend/config.yaml
+src/AppHost/aspire-output/templates/corebackend/deployment.yaml
+src/AppHost/aspire-output/templates/corebackend/secrets.yaml
+src/AppHost/aspire-output/templates/corebackend/service.yaml
+src/AppHost/aspire-output/templates/jobs/config.yaml
+src/AppHost/aspire-output/templates/jobs/deployment.yaml
+src/AppHost/aspire-output/templates/jobs/service.yaml
+src/AppHost/aspire-output/templates/localgateway/config.yaml
+src/AppHost/aspire-output/templates/localgateway/deployment.yaml
+src/AppHost/aspire-output/templates/localgateway/service.yaml
+src/AppHost/aspire-output/templates/postgres/config.yaml
+src/AppHost/aspire-output/templates/postgres/secrets.yaml
+src/AppHost/aspire-output/templates/postgres/service.yaml
+src/AppHost/aspire-output/templates/postgres/statefulset.yaml

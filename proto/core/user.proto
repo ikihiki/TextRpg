@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package textrpg.core;
+
+option csharp_namespace = "TextRpg.Core";
+
+import "google/protobuf/timestamp.proto";
+
+// Core Backend service for user management.
+// This service owns the user data and authentication state.
+service UserService {
+  // User registration (US-UM01)
+  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse);
+  
+  // User login (US-UM03)
+  rpc LoginUser(LoginUserRequest) returns (LoginUserResponse);
+  
+  // User logout (US-UM04)
+  rpc LogoutUser(LogoutUserRequest) returns (LogoutUserResponse);
+  
+  // Get user profile (US-UM08)
+  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse);
+  
+  // Update user profile (US-UM09)
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserProfileResponse);
+  
+  // Delete user account (US-UM11)
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  
+  // Validate session token (internal use)
+  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+}
+
+// User Registration Messages (US-UM01)
+
+message RegisterUserRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message RegisterUserResponse {
+  bool success = 1;
+  string user_id = 2;
+  string error_message = 3;
+}
+
+// User Login Messages (US-UM03)
+
+message LoginUserRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginUserResponse {
+  bool success = 1;
+  string user_id = 2;
+  string session_token = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  string error_message = 5;
+}
+
+// User Logout Messages (US-UM04)
+
+message LogoutUserRequest {
+  string session_token = 1;
+}
+
+message LogoutUserResponse {
+  bool success = 1;
+}
+
+// Get User Profile Messages (US-UM08)
+
+message GetUserProfileRequest {
+  string user_id = 1;
+}
+
+message GetUserProfileResponse {
+  bool success = 1;
+  UserProfile profile = 2;
+  string error_message = 3;
+}
+
+message UserProfile {
+  string user_id = 1;
+  string email = 2;
+  string display_name = 3;
+  string icon_url = 4;
+  string bio = 5;
+  string language = 6;
+  NotificationSettings notification_settings = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message NotificationSettings {
+  bool note_updates = 1;
+  bool session_reminders = 2;
+  bool marketing = 3;
+}
+
+// Update User Profile Messages (US-UM09)
+
+message UpdateUserProfileRequest {
+  string user_id = 1;
+  string display_name = 2;
+  string icon_url = 3;
+  string bio = 4;
+  string language = 5;
+  NotificationSettings notification_settings = 6;
+}
+
+message UpdateUserProfileResponse {
+  bool success = 1;
+  UserProfile profile = 2;
+  string error_message = 3;
+}
+
+// Delete User Messages (US-UM11)
+
+message DeleteUserRequest {
+  string user_id = 1;
+  string password = 2; // For re-authentication
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+// Session Validation Messages
+
+message ValidateSessionRequest {
+  string session_token = 1;
+}
+
+message ValidateSessionResponse {
+  bool valid = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}

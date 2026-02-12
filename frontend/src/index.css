@@ -2,15 +2,253 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
+  --primary-color: #4a90d9;
+  --primary-hover: #3d7bc2;
+  --danger-color: #dc3545;
+  --danger-hover: #c82333;
+  --border-color: #ddd;
+  --text-color: #333;
+  --text-secondary: #666;
+  --background-color: #f5f5f5;
+  --card-background: #fff;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: var(--background-color);
+  color: var(--text-color);
 }
 
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+/* App Layout */
+.app-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.app-header h1 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.app-main {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Auth Forms */
+.auth-form {
+  background: var(--card-background);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+/* Buttons */
+.primary-button,
+.secondary-button,
+.danger-button,
+.link-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.primary-button {
+  width: 100%;
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.primary-button:hover {
+  background-color: var(--primary-hover);
+}
+
+.secondary-button {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.secondary-button:hover {
+  background-color: #e8e8e8;
+}
+
+.danger-button {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.danger-button:hover {
+  background-color: var(--danger-hover);
+}
+
+.link-button {
+  background: none;
+  color: var(--primary-color);
+  padding: 0;
+  text-decoration: underline;
+}
+
+.link-button:hover {
+  color: var(--primary-hover);
+}
+
+/* Error Messages */
+.error-message,
+.error-banner {
+  background-color: #ffebee;
+  color: var(--danger-color);
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Auth Switch */
+.auth-switch {
+  text-align: center;
+  margin-top: 1rem;
+  color: var(--text-secondary);
+}
+
+/* Profile */
+.profile {
+  background: var(--card-background);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profile-avatar img,
+.avatar-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.profile-info h2 {
+  margin: 0;
+}
+
+.profile-email {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.profile-details,
+.profile-edit {
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 0.75rem;
+}
+
+.detail-row .label {
+  width: 120px;
+  color: var(--text-secondary);
+}
+
+.detail-row .value {
+  flex: 1;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Danger Zone */
+.danger-zone {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.danger-zone h3 {
+  color: var(--danger-color);
+  margin-top: 0;
+}
+
+.delete-confirm {
+  background-color: #ffebee;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.delete-confirm p {
+  margin-top: 0;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
 }

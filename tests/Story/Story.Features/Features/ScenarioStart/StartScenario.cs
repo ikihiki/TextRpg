@@ -4,12 +4,12 @@ namespace Story.Features.ScenarioStart;
 
 public class StartScenario : IUseCase<StartScenarioRequest, StartScenarioResponse>
 {
-    public StartScenarioResponse Execute(StartScenarioRequest request)
+    public ValueTask<StartScenarioResponse> ExecuteAsync(StartScenarioRequest request, CancellationToken cancellationToken = default)
     {
-        return new StartScenarioResponse
+        return ValueTask.FromResult(new StartScenarioResponse
         {
             Success = true,
             Message = $"Scenario {request.ScenarioId} started successfully"
-        };
+        });
     }
 }

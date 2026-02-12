@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "textrpg.fullname" . }}-jobs
+  labels:
+    {{- include "textrpg.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jobs
+spec:
+  replicas: {{ .Values.replicas.jobs }}
+  selector:
+    matchLabels:
+      {{- include "textrpg.serviceSelectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: jobs
+  template:
+    metadata:
+      labels:
+        {{- include "textrpg.serviceSelectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: jobs
+    spec:
+      containers:
+        - name: jobs
+          image: "{{ .Values.images.jobs.repository }}:{{ .Values.images.jobs.tag }}"
+          imagePullPolicy: {{ .Values.images.jobs.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.ports.jobs }}
+              name: http
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:{{ .Values.ports.jobs }}"
+          resources:
+            {{- toYaml .Values.resources.jobs | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "textrpg.fullname" . }}-jobs
+  labels:
+    {{- include "textrpg.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jobs
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.ports.jobs }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "textrpg.serviceSelectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: jobs
