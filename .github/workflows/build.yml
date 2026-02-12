@@ -101,5 +101,5 @@ jobs:
             --set parameters.aiorchestrator.aiorchestrator_image=ghcr.io/ikihiki/textrpg/aiorchestrator:${{ github.sha }}\
             --set secrets.postgres.POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
             --set secrets.corebackend.postgres_password="${{ secrets.POSTGRES_PASSWORD }}" \
-            --namespace {{github.head_ref}} --create-namespace
+            --namespace ${{github.head_ref}} --create-namespace
 
