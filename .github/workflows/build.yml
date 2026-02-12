@@ -91,6 +91,23 @@ jobs:
 
       - uses: azure/setup-helm@v4.3.0
 
+      - name: Compute namespace from branch (with hash)
+        shell: bash
+        run: |
+          raw="${GITHUB_REF_NAME}"
+          base="$(echo "$raw" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9-]+/-/g' | sed -E 's/^-+//; s/-+$//')"
+          [ -z "$base" ] && base="pr"
+
+          # 8桁ハッシュ（衝突しにくい）
+          h="$(printf '%s' "$raw" | sha256sum | cut -c1-8)"
+
+          # "base-h" で 63 以内に（base側を調整）
+          max_base=$((63 - 1 - 8))
+          base="${base:0:$max_base}"
+
+          ns="${base}-${h}"
+          echo "NAMESPACE=$ns" >> "$GITHUB_ENV"
+
       - name: Deploy helm
         run: |
           helm upgrade --install textrpg manifests \
@@ -101,5 +118,5 @@ jobs:
             --set parameters.aiorchestrator.aiorchestrator_image=ghcr.io/ikihiki/textrpg/aiorchestrator:${{ github.sha }}\
             --set secrets.postgres.POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
             --set secrets.corebackend.postgres_password="${{ secrets.POSTGRES_PASSWORD }}" \
-            --namespace ${{github.head_ref}} --create-namespace
+            --namespace ${{ env.NAMESPACE }} --create-namespace
 
