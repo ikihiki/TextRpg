@@ -112,10 +112,15 @@ jobs:
         run: |
           helm upgrade --install textrpg manifests \
             --set parameters.corebackend.corebackend_image=ghcr.io/ikihiki/textrpg/corebackend:${{ github.sha }} \
+            --set parameters.corebackend.port_http=8080 \
             --set parameters.bffgateway.bffgateway_image=ghcr.io/ikihiki/textrpg/bffgateway:${{ github.sha }} \
+            --set parameters.bffgateway.port_http=8080 \
             --set parameters.localgateway.localgateway_image=ghcr.io/ikihiki/textrpg/localgateway:${{ github.sha }} \
+            --set parameters.localgateway.port_http=8080 \
             --set parameters.jobs.jobs_image=ghcr.io/ikihiki/textrpg/jobs:${{ github.sha }} \
+            --set parameters.jobs.port_http=8080 \
             --set parameters.aiorchestrator.aiorchestrator_image=ghcr.io/ikihiki/textrpg/aiorchestrator:${{ github.sha }}\
+            --set parameters.aiorchestrator.port_http=8080 \
             --set secrets.postgres.POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
             --set secrets.corebackend.postgres_password="${{ secrets.POSTGRES_PASSWORD }}" \
             --namespace ${{ env.NAMESPACE }} --create-namespace
