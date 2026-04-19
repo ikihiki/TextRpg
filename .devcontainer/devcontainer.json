@@ -2,7 +2,15 @@
   "name": "TextRpg",
   "workspaceFolder": "/workspaces/TextRpg",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "args": {
+      "USER_UID": "1000",
+      "USER_GID": "1000"
+    }
+  },
+  "containerEnv": {
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8"
   },
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
@@ -26,5 +34,7 @@
     5001
   ],
   "postCreateCommand": "bash -lc 'dotnet restore TextRpg.slnx && dotnet tool restore && cd frontend && if [ -f package-lock.json ]; then npm ci; else npm install --package-lock=false; fi'",
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "updateRemoteUserUID": false
 }
