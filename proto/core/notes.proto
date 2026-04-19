@@ -6,6 +6,7 @@ option csharp_namespace = "TextRpg.Core";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "core/common.proto";
 
 // Core Backend service for managing Canonical Notes (Lorebook).
 // This service handles structured knowledge management for consistent AI generation.
@@ -55,13 +56,6 @@ enum NoteType {
   NOTE_TYPE_LORE = 6;
   NOTE_TYPE_RULE = 7;
   NOTE_TYPE_CUSTOM = 99;
-}
-
-enum CanonLevel {
-  CANON_LEVEL_UNSPECIFIED = 0;
-  CANON_LEVEL_RUMOR = 1;       // Unverified information, may be false
-  CANON_LEVEL_TENTATIVE = 2;   // Likely true but not confirmed
-  CANON_LEVEL_CANON = 3;       // Confirmed truth, AI must follow
 }
 
 message CreateNoteResponse {

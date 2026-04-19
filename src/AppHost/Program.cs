@@ -1,9 +1,15 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-// TODO: Add service references as they are created
-// Example:
-// var coreBackend = builder.AddProject<Projects.CoreBackend>("corebackend");
-// var bffGateway = builder.AddProject<Projects.BffGateway>("bffgateway")
-//     .WithReference(coreBackend);
+var aiOrchestrator = builder.AddProject<Projects.AIOrchestrator_Service>("aiorchestrator");
+var localGateway = builder.AddProject<Projects.LocalGateway_Service>("localgateway");
+var jobs = builder.AddProject<Projects.Jobs_Service>("jobs")
+    .WithReference(localGateway);
+var coreBackend = builder.AddProject<Projects.CoreBackend_Service>("corebackend")
+    .WithReference(aiOrchestrator)
+    .WithReference(jobs);
+
+builder.AddProject<Projects.BffGateway_Service>("bffgateway")
+    .WithReference(coreBackend)
+    .WithReference(aiOrchestrator);
 
 builder.Build().Run();
