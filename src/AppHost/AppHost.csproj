@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,6 +9,19 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AIOrchestrator\AIOrchestrator.Service\AIOrchestrator.Service.csproj"
+                      IsAspireProjectResource="true" />
+    <ProjectReference Include="..\BffGateway\BffGateway.Service\BffGateway.Service.csproj"
+                      IsAspireProjectResource="true" />
+    <ProjectReference Include="..\CoreBackend\CoreBackend.Service\CoreBackend.Service.csproj"
+                      IsAspireProjectResource="true" />
+    <ProjectReference Include="..\Jobs\Jobs.Service\Jobs.Service.csproj"
+                      IsAspireProjectResource="true" />
+    <ProjectReference Include="..\LocalGateway\LocalGateway.Service\LocalGateway.Service.csproj"
+                      IsAspireProjectResource="true" />
   </ItemGroup>
 
 </Project>

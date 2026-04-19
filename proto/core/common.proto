@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package textrpg.core;
+
+option csharp_namespace = "TextRpg.Core";
+
+enum CanonLevel {
+  CANON_LEVEL_UNSPECIFIED = 0;
+  CANON_LEVEL_RUMOR = 1;
+  CANON_LEVEL_TENTATIVE = 2;
+  CANON_LEVEL_CANON = 3;
+}

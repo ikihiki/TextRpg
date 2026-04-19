@@ -15,6 +15,7 @@
 | ファイル | 説明 | 主要サービス |
 |---------|------|------------|
 | `bff/game_api.proto` | フロントエンド API | GameApi |
+| `core/common.proto` | Core 共有 enum / 型 | Core 共通 |
 | `core/session.proto` | セッション管理 | SessionService |
 | `core/notes.proto` | 正史ノート管理 | NotesService |
 | `core/assets.proto` | アセット管理 | AssetService |
@@ -26,17 +27,10 @@
 
 ### C# (.NET)
 
-すべての proto ファイルから C# コードを生成：
+`Shared.Protos` をビルドすると、すべての proto ファイルから C# コードが自動生成されます。
 
 ```bash
-# すべての proto ファイルをコンパイル
-for proto in proto/**/*.proto; do
-  protoc --proto_path=proto \
-         --csharp_out=src/Shared/Protos \
-         --grpc_out=src/Shared/Protos \
-         --plugin=protoc-gen-grpc=$(which grpc_csharp_plugin) \
-         "$proto"
-done
+dotnet build src/Shared/Protos/Shared.Protos.csproj
 ```
 
 ### TypeScript (フロントエンド)
@@ -44,20 +38,17 @@ done
 gRPC-Web 用に TypeScript コードを生成：
 
 ```bash
-protoc --proto_path=proto \
-       --js_out=import_style=commonjs,binary:frontend/src/grpc \
-       --grpc-web_out=import_style=typescript,mode=grpcwebtext:frontend/src/grpc \
-       proto/bff/game_api.proto
+cd frontend
+npm install
+npm run proto
 ```
 
 ## 検証
 
-すべての proto ファイルが正しい構文であることを確認：
+Shared.Protos のビルドで proto の構文と C# 生成をまとめて検証できます。
 
 ```bash
-for proto in proto/**/*.proto; do
-  protoc --proto_path=proto --csharp_out=/tmp/proto_test "$proto" || echo "FAILED: $proto"
-done
+dotnet build src/Shared/Protos/Shared.Protos.csproj
 ```
 
 ## ドキュメント
@@ -66,7 +57,7 @@ done
 
 ## 統計
 
-- **proto ファイル数**: 7 ファイル
+- **proto ファイル数**: 8 ファイル
 - **合計行数**: 約 2,000 行
 - **サービス数**: 7 サービス
 - **メッセージ数**: 200+ メッセージ

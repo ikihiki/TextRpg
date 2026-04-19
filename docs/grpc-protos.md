@@ -19,6 +19,7 @@ proto/
 ├── bff/
 │   └── game_api.proto          # フロントエンド向け API
 ├── core/
+│   ├── common.proto            # Core Backend 共有 enum / 型
 │   ├── session.proto           # セッション・状態管理
 │   ├── notes.proto             # 正史ノート（Lorebook）
 │   └── assets.proto            # アセット・挿絵管理
