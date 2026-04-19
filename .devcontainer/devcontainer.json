@@ -1,0 +1,30 @@
+{
+  "name": "TextRpg",
+  "workspaceFolder": "/workspaces/TextRpg",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "forwardPorts": [
+    5173,
+    5000,
+    5001
+  ],
+  "postCreateCommand": "bash -lc 'dotnet restore TextRpg.slnx && cd frontend && if [ -f package-lock.json ]; then npm ci; else npm install --package-lock=false; fi'",
+  "remoteUser": "vscode"
+}

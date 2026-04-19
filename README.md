@@ -42,8 +42,14 @@ AIとユーザーが共同で物語を進行・編集できる
 ### 全体
 - **.NET Aspire**（ローカル/本番オーケストレーション）
 - **gRPC / gRPC-Web**
-- **C# (.NET 8+)**
+- **C# (.NET 10+)**
 - **TypeScript（フロントエンド）**
+
+## 開発環境
+
+- VS Code / GitHub Codespaces では `.devcontainer/` を利用できます
+- devcontainer には **.NET 10 SDK**, **Node.js 20**, **protobuf-compiler** を含めています
+- 初回作成時に `dotnet restore TextRpg.slnx` と `frontend/` の npm 依存解決を自動実行します
 
 ### バックエンド
 - ASP.NET Core (gRPC)
