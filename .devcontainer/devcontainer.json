@@ -25,6 +25,6 @@
     5000,
     5001
   ],
-  "postCreateCommand": "bash -lc 'dotnet restore TextRpg.slnx && cd frontend && if [ -f package-lock.json ]; then npm ci; else npm install --package-lock=false; fi'",
+  "postCreateCommand": "bash -lc 'dotnet restore TextRpg.slnx && dotnet tool restore && cd frontend && if [ -f package-lock.json ]; then npm ci; else npm install --package-lock=false; fi'",
   "remoteUser": "vscode"
 }

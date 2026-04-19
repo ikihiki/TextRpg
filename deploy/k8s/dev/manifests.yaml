@@ -1,0 +1,262 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ${FRONTEND_IMAGE}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bffgateway
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bffgateway
+  template:
+    metadata:
+      labels:
+        app: bffgateway
+    spec:
+      containers:
+        - name: bffgateway
+          image: ${BFF_IMAGE}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://0.0.0.0:8080
+            - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+              value: "true"
+            - name: AUTH_FRONTEND_URL
+              value: https://${FRONTEND_HOST}
+            - name: AUTH_ALLOWED_ORIGINS
+              value: https://${FRONTEND_HOST}
+            - name: AUTH_BOOTSTRAP_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: text-rpg-secrets
+                  key: bootstrap-email
+                  optional: true
+            - name: AUTH_BOOTSTRAP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: text-rpg-secrets
+                  key: bootstrap-password
+                  optional: true
+            - name: AUTH_BOOTSTRAP_DISPLAY_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: text-rpg-secrets
+                  key: bootstrap-display-name
+                  optional: true
+            - name: AUTH_GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: text-rpg-secrets
+                  key: google-client-id
+                  optional: true
+            - name: AUTH_GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: text-rpg-secrets
+                  key: google-client-secret
+                  optional: true
+            - name: AUTH_MICROSOFT_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: text-rpg-secrets
+                  key: microsoft-client-id
+                  optional: true
+            - name: AUTH_MICROSOFT_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: text-rpg-secrets
+                  key: microsoft-client-secret
+                  optional: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bffgateway
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: bffgateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: corebackend
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: corebackend
+  template:
+    metadata:
+      labels:
+        app: corebackend
+    spec:
+      containers:
+        - name: corebackend
+          image: ${COREBACKEND_IMAGE}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://0.0.0.0:8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: corebackend
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: corebackend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiorchestrator
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aiorchestrator
+  template:
+    metadata:
+      labels:
+        app: aiorchestrator
+    spec:
+      containers:
+        - name: aiorchestrator
+          image: ${AIORCHESTRATOR_IMAGE}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://0.0.0.0:8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aiorchestrator
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: aiorchestrator
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobs
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs
+  template:
+    metadata:
+      labels:
+        app: jobs
+    spec:
+      containers:
+        - name: jobs
+          image: ${JOBS_IMAGE}
+          imagePullPolicy: Always
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: text-rpg
+  namespace: ${NAMESPACE}
+spec:
+  rules:
+    - host: ${FRONTEND_HOST}
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: bffgateway
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
