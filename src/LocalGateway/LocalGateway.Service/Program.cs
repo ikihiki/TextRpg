@@ -1,5 +1,8 @@
+using TextRpg.Shared.Utils;
+
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.AddTextRpgTelemetry();
 // TODO: Add gRPC client configuration for bidirectional streaming
 // TODO: Add work stream client service
 

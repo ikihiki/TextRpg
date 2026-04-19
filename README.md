@@ -49,7 +49,61 @@ AIとユーザーが共同で物語を進行・編集できる
 
 - VS Code / GitHub Codespaces では `.devcontainer/` を利用できます
 - devcontainer には **.NET 10 SDK**, **Node.js 20**, **protobuf-compiler** を含めています
-- 初回作成時に `dotnet restore TextRpg.slnx` と `frontend/` の npm 依存解決を自動実行します
+- 初回作成時に `dotnet restore TextRpg.slnx`、`dotnet tool restore`、`frontend/` の npm 依存解決を自動実行します
+- Aspire CLI はプロジェクトローカル tool として追加済みで、`dotnet aspire` または `dotnet tool run aspire` で利用できます
+- `dotnet aspire run --apphost src/AppHost/AppHost.csproj` で backend 群に加えて Vite frontend も起動します
+- Aspire 起動時の dashboard / frontend / BFF ポートは固定せず自動割り当てします
+- Coder の port forward 経由でも開けるように、frontend は `*.coder.dev.sakuraya.cloud` を Vite の許可ホストに含めています
+- 各 .NET service は OTLP exporter が与えられたときに OpenTelemetry（ログ / トレース / メトリクス）を Aspire dashboard へ送信します
+
+### GitHub Actions / dev-cluster デプロイ
+
+- `.github/workflows/main.yml` で `main` push または `workflow_dispatch` 時に `dev-cluster` へデプロイします
+- デプロイ先 namespace は `text-rpg` です
+- frontend ingress host は `text-rpg.dev.sakuraya.cloud` です
+- GitHub Actions は GHCR に以下の image を push してから Kubernetes manifest を適用します
+  - `text-rpg-frontend`
+  - `text-rpg-bffgateway`
+  - `text-rpg-corebackend`
+  - `text-rpg-aiorchestrator`
+  - `text-rpg-jobs`
+- デプロイに必要な GitHub Secrets
+  - `TS_OAUTH_CLIENT_ID`
+  - `TS_OAUTH_SECRET`
+  - `AUTH_BOOTSTRAP_EMAIL`
+  - `AUTH_BOOTSTRAP_PASSWORD`
+  - `AUTH_BOOTSTRAP_DISPLAY_NAME`（任意）
+  - `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET`（任意）
+  - `AUTH_MICROSOFT_CLIENT_ID` / `AUTH_MICROSOFT_CLIENT_SECRET`（任意）
+
+### 認証の最小構成
+
+BFF Gateway では、**環境変数でメール/パスワードの初期ログイン**と **OAuth ログイン**を有効化できます。
+
+#### メール/パスワード
+
+- `AUTH_BOOTSTRAP_EMAIL`
+- `AUTH_BOOTSTRAP_PASSWORD`
+- `AUTH_BOOTSTRAP_DISPLAY_NAME`（任意）
+
+この 2 つ以上を設定すると、起動時に bootstrap ユーザーとしてログイン可能になります。
+
+#### OAuth
+
+- Google
+  - `AUTH_GOOGLE_CLIENT_ID`
+  - `AUTH_GOOGLE_CLIENT_SECRET`
+  - `AUTH_GOOGLE_DISPLAY_NAME`（任意）
+- Microsoft Account
+  - `AUTH_MICROSOFT_CLIENT_ID`
+  - `AUTH_MICROSOFT_CLIENT_SECRET`
+  - `AUTH_MICROSOFT_DISPLAY_NAME`（任意）
+
+#### フロントエンド連携
+
+- `AUTH_FRONTEND_URL` : OAuth 完了後のリダイレクト先。既定値は `http://localhost:5173`
+- `AUTH_ALLOWED_ORIGINS` : Cookie 付き API 呼び出しを許可する origin のカンマ区切り一覧
+- `VITE_BFF_BASE_URL` : frontend から呼ぶ BFF のベース URL。既定値は `http://localhost:5000`
 
 ### バックエンド
 - ASP.NET Core (gRPC)
